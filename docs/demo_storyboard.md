@@ -17,17 +17,17 @@
 
 > 고속 `92km/h` 버튼은 제동 포함이라 급제동 배너가 함께 뜰 수 있음. 4–16s 컷이 지저분하면 IVI 쪽 속도 선택으로 대체.
 
-## 녹화·합성
+## 녹화·합성 (한 번에 한 흐름)
+**배치:** Mac 화면에 에뮬레이터 창(가로)과 컴패니언 Chrome 창(폭 ~430px, 탭을 떼어 별도 창)을 겹치지 않게 놓는다. 시뮬레이터 대시보드는 다른 데스크톱/아래에 두고 프리셋만 누른다(조작 장면은 영상에 안 씀).
+**녹화:** QuickTime → 새로운 화면 기록(⇧⌘5) → 옵션에서 마이크/시스템 오디오 켜기 → 전체 화면 기록. 프리셋 `0` 리셋 후 표의 흐름대로 끊지 않고 진행(NG 나면 `0`부터 다시).
+**합성:** 녹화 파일에서 두 창 영역을 잘라 세로로 쌓는다. 좌표는 녹화 영상 한 프레임에서 확인(`ffmpeg -ss 5 -i rec.mov -frames:v 1 frame.png`).
 ```sh
-# IVI 녹화 (최대 180초, 끝나면 Ctrl+C)
-ANDROID_SERIAL=emulator-5554 adb shell screenrecord --bit-rate 12000000 /sdcard/ivi.mp4
-ANDROID_SERIAL=emulator-5554 adb pull /sdcard/ivi.mp4 out/ivi.mp4
-# 폰: 컴패니언 화면을 폰 화면 녹화로 out/phone.mp4
-
-# 세로 합성: 위 자막 띠 300px, IVI 608px, 폰 1012px (자막·BGM은 CapCut에서)
-ffmpeg -i out/ivi.mp4 -i out/phone.mp4 -filter_complex \
- "[0:v]scale=1080:608,pad=1080:908:0:300:black[top];[1:v]scale=-2:1012,pad=1080:1012:(ow-iw)/2:0:black[bot];[top][bot]vstack,fps=30[v]" \
- -map "[v]" -map '0:a?' -c:v libx264 -crf 18 -pix_fmt yuv420p -shortest out/odee_short.mp4
+# IVI=폭:높이:x:y, PHONE=폭:높이:x:y (녹화 영상 픽셀 기준, ffmpeg crop 순서)
+IVI=2560:1440:0:0 PHONE=860:1860:2600:0
+ffmpeg -i out/rec.mov -filter_complex \
+ "[0:v]split[a][b];[a]crop=${IVI},scale=1080:608:force_original_aspect_ratio=decrease,pad=1080:908:(ow-iw)/2:300+(608-ih)/2:black[top];\
+  [b]crop=${PHONE},scale=1080:1012:force_original_aspect_ratio=decrease,pad=1080:1012:(ow-iw)/2:0:black[bot];[top][bot]vstack,fps=30[v]" \
+ -map "[v]" -map '0:a?' -c:v libx264 -crf 18 -pix_fmt yuv420p -c:a aac out/odee_short.mp4
 ```
-- 두 클립은 녹화 시작을 맞추거나(동시 시작) CapCut에서 싱크. 폰 화면이 없는 구간은 하단에 자막 크게
-- TTS·Gleo 음성은 에뮬레이터 오디오로 나오므로 Mac 화면 녹화(QuickTime, 시스템 오디오)로 따로 받아 덧입힌다 (`screenrecord`는 소리 미포함)
+- 위 300px 띠·하단 여백에 CapCut으로 자막·BGM. 길면 CapCut에서 구간 컷(흐름은 유지)
+- 폰 장면이 없는 구간(A-1·A-2)은 하단에 컴패니언 지도가 함께 움직여 "모두가 같은 세션"을 보여 줌
