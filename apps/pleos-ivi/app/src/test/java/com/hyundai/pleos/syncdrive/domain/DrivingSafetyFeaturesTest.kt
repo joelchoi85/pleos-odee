@@ -158,93 +158,37 @@ class DrivingSafetyFeaturesTest {
     }
 
     @Test
-    fun `hard braking in voice call mutes microphone and releasing restores unmuted state`() = runTest {
-        val audioFocus = MockAudioFocus()
-        val gateway = SimulatorBridgeGatewayImpl()
-        var micHardwareEnabled = false
+    fun `hard braking ducks incoming voice and keeps my microphone untouched`() = runTest {
+        var micEnabled = false
+        var remoteVolume = 1.0
         val roomConnector = object : WebRtcRoomConnector {
-            override suspend fun connectRoom(roomName: String, livekitUrl: String, token: String?) {
-                micHardwareEnabled = true
-            }
-            override suspend fun disconnectRoom() { micHardwareEnabled = false }
-            override fun setMicrophoneEnabled(enabled: Boolean) {
-                micHardwareEnabled = enabled
-            }
+            override suspend fun connectRoom(roomName: String, livekitUrl: String, token: String?) { micEnabled = true }
+            override suspend fun disconnectRoom() { micEnabled = false }
+            override fun setMicrophoneEnabled(enabled: Boolean) { micEnabled = enabled }
+            override fun setRemoteAudioVolume(volume: Double) { remoteVolume = volume }
         }
+        val manager = InCarVoiceSessionManager(MockAudioFocus(), SimulatorBridgeGatewayImpl(), roomConnector)
 
-        val manager = InCarVoiceSessionManager(
-            audioFocusAdapter = audioFocus,
-            vehicleGateway = gateway,
-            roomConnector = roomConnector
-        )
-
-        // 통화 연결 시작
+        // 통화 전 급제동 → 연결되자마자 수신 볼륨 감쇄
+        manager.setHardBrakingMute(true)
         manager.startVoiceSession(
-            voiceSession = VoiceSessionPayload(
-                roomName = "ROOM-TEST",
-                livekitUrl = "ws://localhost:7880",
-                participantTokens = mapOf("host" to "token")
-            ),
+            VoiceSessionPayload(roomName = "ROOM-TEST", livekitUrl = "ws://localhost:7880", participantTokens = mapOf("host" to "t")),
             participantId = "host"
         )
-
         assertEquals(VoiceRoomState.CONNECTED_DUCKED, manager.state.value.roomState)
-        assertTrue(micHardwareEnabled)
-        assertFalse(manager.state.value.isHardBrakingMuted)
-        assertFalse(manager.state.value.isMicMuted)
+        assertEquals(InCarVoiceSessionManager.HARD_BRAKING_REMOTE_VOLUME, remoteVolume, 0.0)
+        assertTrue(micEnabled)
 
-        // 1) 급제동 감지 -> 마이크 즉시 안전 차단 (Audio Safety Kill)
-        manager.setHardBrakingMute(true)
-        assertTrue(manager.state.value.isHardBrakingMuted)
-        assertFalse(micHardwareEnabled)
-
-        // 2) 급제동 종료 후 정상 복귀 -> 마이크 복원
         manager.setHardBrakingMute(false)
-        assertFalse(manager.state.value.isHardBrakingMuted)
-        assertTrue(micHardwareEnabled)
-    }
+        assertEquals(1.0, remoteVolume, 0.0)
 
-    @Test
-    fun `manually muted user remains muted when hard braking ends`() = runTest {
-        val audioFocus = MockAudioFocus()
-        val gateway = SimulatorBridgeGatewayImpl()
-        var micHardwareEnabled = false
-        val roomConnector = object : WebRtcRoomConnector {
-            override suspend fun connectRoom(roomName: String, livekitUrl: String, token: String?) {
-                micHardwareEnabled = true
-            }
-            override suspend fun disconnectRoom() { micHardwareEnabled = false }
-            override fun setMicrophoneEnabled(enabled: Boolean) {
-                micHardwareEnabled = enabled
-            }
-        }
-
-        val manager = InCarVoiceSessionManager(
-            audioFocusAdapter = audioFocus,
-            vehicleGateway = gateway,
-            roomConnector = roomConnector
-        )
-
-        manager.startVoiceSession(
-            voiceSession = VoiceSessionPayload(roomName = "ROOM-TEST", livekitUrl = "ws://localhost:7880"),
-            participantId = "host"
-        )
-
-        // 사용자가 수동으로 마이크 음소거
+        // 수동 음소거는 급제동과 독립
         manager.toggleMicrophoneMute()
-        assertTrue(manager.state.value.isMicMuted)
-        assertFalse(micHardwareEnabled)
-
-        // 급제동 발생
         manager.setHardBrakingMute(true)
-        assertTrue(manager.state.value.isHardBrakingMuted)
-        assertFalse(micHardwareEnabled)
-
-        // 급제동 해제 시 사용자의 원래 음소거 상태(isMicMuted == true)가 보존되어야 함
+        assertEquals(InCarVoiceSessionManager.HARD_BRAKING_REMOTE_VOLUME, remoteVolume, 0.0)
         manager.setHardBrakingMute(false)
-        assertFalse(manager.state.value.isHardBrakingMuted)
         assertTrue(manager.state.value.isMicMuted)
-        assertFalse(micHardwareEnabled)
+        assertFalse(micEnabled)
     }
 
     // =========================================================================
@@ -256,7 +200,8 @@ class DrivingSafetyFeaturesTest {
         val local = LocalVehicleSnapshot(
             vehicleId = "host-01",
             displayName = "아이오닉 6 (1호차 · 호스트)",
-            speedKmh = 0.0
+            speedKmh = 0.0,
+            gear = GearState.D
         )
         val companions = listOf(
             CompanionVehicleUiModel(
@@ -312,7 +257,7 @@ class DrivingSafetyFeaturesTest {
 
     @Test
     fun `companion pitstop or low battery generates pitstop warning briefing`() {
-        val local = LocalVehicleSnapshot(speedKmh = 0.0)
+        val local = LocalVehicleSnapshot(speedKmh = 0.0, gear = GearState.D)
         val companions = listOf(
             CompanionVehicleUiModel(
                 memberId = "host-01",
@@ -367,7 +312,7 @@ class DrivingSafetyFeaturesTest {
 
     @Test
     fun `companion off route generates deviation warning briefing`() {
-        val local = LocalVehicleSnapshot(speedKmh = 0.0)
+        val local = LocalVehicleSnapshot(speedKmh = 0.0, gear = GearState.D)
         val companions = listOf(
             CompanionVehicleUiModel(
                 memberId = "host-01",
@@ -426,7 +371,8 @@ class DrivingSafetyFeaturesTest {
         val local = LocalVehicleSnapshot(
             lat = 37.3947,
             lng = 127.1112,
-            speedKmh = 0.0
+            speedKmh = 0.0,
+            gear = GearState.D
         )
         // 2호차: 37.3915, 127.1112 (~355m 남쪽)
         val companions = listOf(
@@ -473,7 +419,7 @@ class DrivingSafetyFeaturesTest {
 
     @Test
     fun `solo driving returns safe single driver message`() {
-        val local = LocalVehicleSnapshot(speedKmh = 0.0)
+        val local = LocalVehicleSnapshot(speedKmh = 0.0, gear = GearState.D)
         val companions = listOf(
             CompanionVehicleUiModel(
                 memberId = "host-01",
@@ -494,6 +440,7 @@ class DrivingSafetyFeaturesTest {
 
         val briefing = generateStationaryBriefing(local, companions)
         assertEquals("🚦 신호 대기 중 · 목적지까지 안전 운행하세요", briefing)
+        assertEquals("🅿️ 정차 중 · 목적지까지 안전 운행하세요", generateStationaryBriefing(local.copy(gear = GearState.P), companions))
     }
 
     // =========================================================================
@@ -502,7 +449,7 @@ class DrivingSafetyFeaturesTest {
 
     @Test
     fun `stationary briefing is generated at or below 1kmh and cleared above 5kmh`() {
-        val local = LocalVehicleSnapshot(speedKmh = 0.0)
+        val local = LocalVehicleSnapshot(speedKmh = 0.0, gear = GearState.D)
         val companions = DemoGroupSeed.defaultCompanions(local)
 
         var currentBriefing: String? = null

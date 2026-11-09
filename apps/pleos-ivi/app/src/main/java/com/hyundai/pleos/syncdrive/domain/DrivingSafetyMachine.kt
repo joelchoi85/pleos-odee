@@ -141,8 +141,10 @@ fun generateStationaryBriefing(
     val otherVehicles = vehicles.filterNot { it.isSelfHost }
     val totalVehicleCount = vehicles.size.coerceAtLeast(1)
 
+    // P단이면 주차, 아니면 신호 대기로 본다
+    val status = if (local.gear == GearState.P) "🅿️ 정차 중" else "🚦 신호 대기 중"
     if (otherVehicles.isEmpty()) {
-        return "🚦 신호 대기 중 · 목적지까지 안전 운행하세요"
+        return "$status · 목적지까지 안전 운행하세요"
     }
 
     fun formatVehicleLabel(v: CompanionVehicleUiModel): String {
@@ -169,7 +171,7 @@ fun generateStationaryBriefing(
             "$normalLabels 정상 주행"
         } else null
 
-        val parts = listOfNotNull("🚦 신호 대기 중", abnormalSummaries.joinToString(" · "), normalSummary)
+        val parts = listOfNotNull(status, abnormalSummaries.joinToString(" · "), normalSummary)
         parts.joinToString(" · ")
     } else {
         val firstOther = otherVehicles.first()
@@ -184,7 +186,7 @@ fun generateStationaryBriefing(
             "${((d / 10.0).roundToInt() * 10).coerceAtLeast(50)}m"
         } else null
 
-        val head = "🚦 신호 대기 중 · 일행 전원(${totalVehicleCount}대) 정상 주행 중"
+        val head = "$status · 일행 전원(${totalVehicleCount}대) 정상 주행 중"
         if (distanceText == null) head else "$head · $firstOtherLabel $distanceText 거리"
     }
 }

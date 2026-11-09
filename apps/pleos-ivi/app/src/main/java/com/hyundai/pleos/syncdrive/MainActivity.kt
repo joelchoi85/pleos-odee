@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.hyundai.pleos.syncdrive.sdk.GleoIntentEventBus
 import com.hyundai.pleos.syncdrive.ui.MainDashboardScreen
+import com.hyundai.pleos.syncdrive.domain.DrivingSafetyLevel
 import com.hyundai.pleos.syncdrive.ui.SyncDriveViewModel
 import com.hyundai.pleos.syncdrive.ui.theme.PleosSyncDriveTheme
 
@@ -30,7 +31,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        handleGleoIntent(intent)
         observeAlertsForForeground()
 
         val prefs = getSharedPreferences("odee", MODE_PRIVATE)
@@ -86,26 +86,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        handleGleoIntent(intent)
-    }
-
     private fun startSession() {
         viewModel.startGroupSession()
         OdeeKeepAliveService.start(this)
     }
 
     /**
-     * B안: 평소엔 순정 내비가 앞. 일행 알림이 오면 오디를 앞으로, 결정·타임아웃으로 알림이 닫히면
+     * B안: 평소엔 순정 내비가 앞. 정차 중 일행 알림이 오면 오디를 앞으로(주행 중엔 음성+알림만), 결정·타임아웃으로 알림이 닫히면
      * 원래 화면(순정 내비)으로 되돌린다. 사용자가 직접 연 경우엔 되돌리지 않음.
      */
     private fun observeAlertsForForeground() {
         lifecycleScope.launch {
             viewModel.uiState.map { it.activeAlert }.distinctUntilChangedBy { it?.eventId }.collect { alert ->
                 if (alert != null) {
-                    if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                    val stationary = viewModel.uiState.value.safetyLevel == DrivingSafetyLevel.STATIONARY
+                    if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && !stationary) {
+                        // 안전 우선: 주행 중엔 지도를 가리지 않는다. 음성 브리핑·음성 응답 + 알림만
+                        OdeeKeepAliveService.notifyAlert(this@MainActivity, alert.headlineKo, fullScreen = false)
+                    } else if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                         broughtToFront = true
                         OdeeKeepAliveService.notifyAlert(this@MainActivity, alert.headlineKo)
                         runCatching {
@@ -123,21 +121,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Gleo "일행 어디쯤이야?" → SHOW_GROUP_LOCATION. 화면을 띄우고 요약을 음성 응답으로 돌려준 뒤 잠시 후 내비 복귀 */
-    private fun handleGleoIntent(incoming: Intent?) {
-        if (incoming?.action != GleoIntentEventBus.ACTION_SHOW_GROUP_LOCATION) return
-        val others = viewModel.uiState.value.companions.filterNot { it.isSelfHost }
-        val summary = if (others.isEmpty()) "아직 연결된 일행이 없습니다." else others.joinToString(" ") {
-            "${it.displayName} 도착 ${it.etaDisplay}${if (it.isOffRoute) ", 경로 이탈 중" else ""}."
-        }
-        GleoIntentEventBus.respond(this, GleoIntentEventBus.ACTION_SHOW_GROUP_LOCATION, true, summary)
-        broughtToFront = true
-        lifecycleScope.launch {
-            delay(GLEO_GLANCE_MS)
-            if (viewModel.uiState.value.activeAlert == null) returnToNaviIfBroughtToFront()
-        }
-    }
-
     private fun returnToNaviIfBroughtToFront() {
         if (!broughtToFront) return
         broughtToFront = false
@@ -149,6 +132,5 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val KEY_CONSENT = "consent_location_voice_v1"
-        const val GLEO_GLANCE_MS = 10_000L
     }
 }

@@ -155,20 +155,25 @@ fun MainDashboardScreen(
         // 메인 영역: 알림 > DEV > 그룹 현황
         Box(Modifier.weight(1f).fillMaxHeight()) {
             when {
-                showOverlay -> SafetyAdaptiveOverlayPanel(
-                    safetyLevel = state.safetyLevel,
-                    activeAlert = state.activeAlert,
-                    countdown = state.countdown,
-                    voiceCall = state.voiceCall,
-                    isVoiceListening = state.isVoiceCommandListening,
-                    onDecision = onAlertDecision,
-                    onToggleMute = onToggleMute,
-                    onHangUpCall = onHangUpCall,
-                    modifier = Modifier.fillMaxSize().padding(12.dp),
-                    isHardBrakingAudioMuted = state.isHardBrakingAudioMuted,
-                    // 그룹 방 = ROOM-<초대코드>, 1:1 방 = 그 뒤에 -<두 ID>
-                    isDirectCall = state.voiceCall.roomName.let { it != null && it != "ROOM-${state.inviteCode}" }
-                )
+                // 통화·알림 화면도 대시보드와 같은 2배 글자 (160dpi 차량 화면에서 sp 그대로면 너무 작음)
+                showOverlay -> CompositionLocalProvider(
+                    LocalDensity provides Density(LocalDensity.current.density, LocalDensity.current.fontScale * 2f)
+                ) {
+                    SafetyAdaptiveOverlayPanel(
+                        safetyLevel = state.safetyLevel,
+                        activeAlert = state.activeAlert,
+                        countdown = state.countdown,
+                        voiceCall = state.voiceCall,
+                        isVoiceListening = state.isVoiceCommandListening,
+                        onDecision = onAlertDecision,
+                        onToggleMute = onToggleMute,
+                        onHangUpCall = onHangUpCall,
+                        modifier = Modifier.fillMaxSize().padding(12.dp),
+                        isHardBrakingAudioMuted = state.isHardBrakingAudioMuted,
+                        // 그룹 방 = ROOM-<초대코드>, 1:1 방 = 그 뒤에 -<두 ID>
+                        isDirectCall = state.voiceCall.roomName.let { it != null && it != "ROOM-${state.inviteCode}" }
+                    )
+                }
                 showDevBar -> Box(Modifier.padding(12.dp)) {
                     DeveloperQuickSimulationBar(
                         localVehicle = state.localVehicle,
@@ -248,7 +253,7 @@ fun MainDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "⚠️ [안전 우선] 급제동 감지 · 내 마이크 일시 차단",
+                            text = "⚠️ [안전 우선] 급제동 감지 · 일행 음성 줄임",
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold

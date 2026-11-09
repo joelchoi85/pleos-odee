@@ -107,6 +107,9 @@ object GleoIntentEventBus {
     /** 통화 연결 여부 (ViewModel이 갱신). 통화가 없을 때 Gleo에 거짓 성공 응답을 하지 않기 위함 */
     @Volatile var isCallActive: Boolean = false
 
+    /** "일행 어디쯤?" 음성 응답 문장 (ViewModel이 갱신) */
+    @Volatile var groupSummary: String = "아직 연결된 일행이 없습니다."
+
     fun emitCallAction(action: VoiceCallAction) {
         _callCommands.tryEmit(action)
     }

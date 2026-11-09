@@ -45,7 +45,7 @@ class OdeeKeepAliveService : Service() {
          * 백그라운드 액티비티 실행이 막힐 때를 대비한 HUN + fullScreenIntent.
          * 허용되면 시스템이 바로 오디를 띄우고, 아니면 알림을 눌러 진입.
          */
-        fun notifyAlert(context: Context, title: String) {
+        fun notifyAlert(context: Context, title: String, fullScreen: Boolean = true) {
             val open = PendingIntent.getActivity(
                 context, 0,
                 Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
@@ -55,7 +55,7 @@ class OdeeKeepAliveService : Service() {
                 .setContentTitle(title)
                 .setCategory(Notification.CATEGORY_NAVIGATION)
                 .setContentIntent(open)
-                .setFullScreenIntent(open, true)
+                .apply { if (fullScreen) setFullScreenIntent(open, true) }
                 .setAutoCancel(true)
                 .build()
             context.getSystemService(NotificationManager::class.java).notify(ID_ALERT, notification)

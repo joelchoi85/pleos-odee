@@ -50,10 +50,10 @@
 
         <activity
             android:name=".MainActivity"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"
             android:exported="true"
             android:launchMode="singleTop"
-            android:screenOrientation="landscape">
+            android:resizeableActivity="true">
 
             <meta-data
                 android:name="distractionOptimized"
@@ -63,17 +63,15 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-            <intent-filter>
-                <action android:name="SHOW_GROUP_LOCATION" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
         </activity>
 
         <receiver
             android:name=".sdk.GleoVoiceActionReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:permission="ai.umos.gleo.permission.APP_ACTION">
+            <!-- Gleo(ai.umos.ambientai)만 가진 signature 권한 → 다른 앱이 통화 종료·마이크 제어 브로드캐스트를 보낼 수 없음 -->
             <intent-filter>
+                <action android:name="SHOW_GROUP_LOCATION" />
                 <action android:name="ANSWER_GROUP_ALERT" />
                 <action android:name="CONTROL_VOICE_CALL" />
             </intent-filter>

@@ -10,7 +10,7 @@
         "name": "SHOW_GROUP_LOCATION",
         "description": "Shows where the other vehicles in the driving group are and their arrival times.",
         "parameters": { "type": "object", "properties": {}, "required": [] },
-        "component": "activity"
+        "component": "service"
       }
     },
     {

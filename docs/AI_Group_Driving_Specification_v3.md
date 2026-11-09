@@ -42,7 +42,7 @@
 3. **`NaviHelper SDK`**
    - 운전자가 음성 또는 원터치로 공동 경유지·대안 경로를 수락하는 즉시 Pleos 순정 내비게이션 경로에 경유지 및 재탐색 반영.
 4. **`TextToSpeech (TTS)` & `SpeechToText (STT)` SDK + `Gleo Interface`**
-   - 돌발 상황 발생 시 AI가 생성한 1문장 상황 브리핑을 즉시 음성 안내하고, 운전자의 자연어 음성 명령으로 핸즈프리 의사결정 완결. 공식 Gleo Interface(`assets/schema.json` + intent-filter + `APP_ACTION_RESPONSE` 응답)에 2개 기능 등록: `SHOW_GROUP_LOCATION`("일행 어디쯤이야?" → 오디 화면 표시 + 일행 ETA·이탈 1문장 응답 → 10초 뒤 순정 내비 복귀), `ANSWER_GROUP_ALERT`(알림에 "수락/경로만/유지" 음성 응답).
+   - 돌발 상황 발생 시 AI가 생성한 1문장 상황 브리핑을 즉시 음성 안내하고, 운전자의 자연어 음성 명령으로 핸즈프리 의사결정 완결. 공식 Gleo Interface(`assets/schema.json` + intent-filter + `APP_ACTION_RESPONSE` 응답)에 2개 기능 등록: `SHOW_GROUP_LOCATION`("일행 어디쯤이야?" → 지도를 가리지 않고 일행 ETA·이탈 1문장 음성 응답, 드로워에 오디를 열어 두면 지도 옆에 함께 표시), `CONTROL_VOICE_CALL`("마이크 꺼줘/통화 끊어줘"), `ANSWER_GROUP_ALERT`(알림에 "수락/경로만/유지" 음성 응답).
 
 ### 2.2. 전체 시스템 데이터 흐름
 

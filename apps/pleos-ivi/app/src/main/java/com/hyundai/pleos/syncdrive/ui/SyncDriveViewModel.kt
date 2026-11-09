@@ -204,6 +204,14 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             voiceSessionManager.state.collect { GleoIntentEventBus.isCallActive = it.roomState == VoiceRoomState.CONNECTED_DUCKED }
         }
+        viewModelScope.launch {
+            uiState.collect { st ->
+                val others = st.companions.filterNot { it.isSelfHost }
+                GleoIntentEventBus.groupSummary = if (others.isEmpty()) "아직 연결된 일행이 없습니다." else others.joinToString(" ") {
+                    "${it.displayName} 도착 ${it.etaDisplay}${if (it.isOffRoute) ", 경로 이탈 중" else ""}."
+                }
+            }
+        }
         observeDrivingSafetyAndBriefing()
         // 그룹 목적지를 순정 내비에 1회 설정 (목적지가 바뀔 때만 다시)
         viewModelScope.launch {

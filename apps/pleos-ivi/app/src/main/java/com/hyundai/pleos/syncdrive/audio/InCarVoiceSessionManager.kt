@@ -5,6 +5,7 @@ import io.livekit.android.LiveKit
 import io.livekit.android.LiveKitOverrides
 import io.livekit.android.audio.NoAudioHandler
 import io.livekit.android.room.Room
+import io.livekit.android.room.track.RemoteAudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -184,6 +185,8 @@ interface WebRtcRoomConnector {
     suspend fun connectRoom(roomName: String, livekitUrl: String, token: String?)
     suspend fun disconnectRoom()
     fun setMicrophoneEnabled(enabled: Boolean)
+    /** 일행 음성(수신) 볼륨 0.0~1.0 */
+    fun setRemoteAudioVolume(volume: Double) {}
 }
 
 /**
@@ -213,6 +216,14 @@ class LiveKitRoomConnector(private val appContext: Context) : WebRtcRoomConnecto
     override fun setMicrophoneEnabled(enabled: Boolean) {
         val r = room ?: return
         scope.launch { r.localParticipant.setMicrophoneEnabled(enabled) }
+    }
+
+    // ponytail: 현재 구독 중인 트랙에만 적용. 급제동은 수 초라 그 사이 새로 들어온 참가자는 원래 볼륨
+    override fun setRemoteAudioVolume(volume: Double) {
+        val r = room ?: return
+        r.remoteParticipants.values.forEach { p ->
+            p.audioTrackPublications.forEach { (_, track) -> (track as? RemoteAudioTrack)?.setVolume(volume) }
+        }
     }
 }
 
@@ -272,7 +283,7 @@ class InCarVoiceSessionManager(
 
             val isHardBraking = _state.value.isHardBrakingMuted
             if (isHardBraking) {
-                roomConnector.setMicrophoneEnabled(false)
+                roomConnector.setRemoteAudioVolume(HARD_BRAKING_REMOTE_VOLUME)
             }
 
             _state.value = ActiveVoiceCallState(
@@ -304,16 +315,13 @@ class InCarVoiceSessionManager(
         }
     }
 
+    /** 급제동 중엔 일행 음성(수신)을 줄여 운전자 주의를 도로로. 내 마이크는 건드리지 않음 */
     fun setHardBrakingMute(muted: Boolean) {
         if (_state.value.isHardBrakingMuted == muted) return
         _state.update { it.copy(isHardBrakingMuted = muted) }
 
         if (_state.value.roomState == VoiceRoomState.CONNECTED_DUCKED) {
-            if (muted) {
-                roomConnector.setMicrophoneEnabled(false)
-            } else {
-                roomConnector.setMicrophoneEnabled(!_state.value.isMicMuted)
-            }
+            roomConnector.setRemoteAudioVolume(if (muted) HARD_BRAKING_REMOTE_VOLUME else 1.0)
         }
     }
 
@@ -321,9 +329,7 @@ class InCarVoiceSessionManager(
         if (_state.value.roomState != VoiceRoomState.CONNECTED_DUCKED) return
         val nextMuted = !_state.value.isMicMuted
         _state.update { it.copy(isMicMuted = nextMuted) }
-        if (!_state.value.isHardBrakingMuted) {
-            roomConnector.setMicrophoneEnabled(!nextMuted)
-        }
+        roomConnector.setMicrophoneEnabled(!nextMuted)
     }
 
     private suspend fun cleanupResources() {
@@ -339,6 +345,8 @@ class InCarVoiceSessionManager(
 
     companion object {
         const val DUCKED_MEDIA_VOLUME_PERCENT = 30
+        /** 급제동 중 일행 음성 볼륨 (완전 차단 대신 20%: 일행이 경고를 외칠 수도 있음) */
+        const val HARD_BRAKING_REMOTE_VOLUME = 0.2
         const val DEFAULT_VOICE_AUDIO_SESSION_ID = 4101
     }
 }

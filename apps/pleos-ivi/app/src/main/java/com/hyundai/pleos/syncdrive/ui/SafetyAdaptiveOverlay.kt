@@ -574,7 +574,7 @@ fun VoiceCallControlCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (voiceCall.isHardBrakingMuted) "⚠️ 급제동 감지 · 내 마이크 일시 차단 중"
+                        text = if (voiceCall.isHardBrakingMuted) "⚠️ 급제동 감지 · 일행 음성을 잠시 줄였습니다"
                         else if (voiceCall.isMicMuted) "마이크가 꺼져 있어 일행에게 들리지 않습니다."
                         else "내 음성이 일행에게 실시간으로 전달되고 있습니다.",
                         color = if (voiceCall.isHardBrakingMuted || voiceCall.isMicMuted) PleosColors.CoralDanger else PleosColors.TextSecondary,
@@ -613,7 +613,7 @@ fun VoiceCallControlCard(
                 onClick = onToggleMute,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 64.dp),
+                    .heightIn(min = 120.dp),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(
                     1.5.dp,
@@ -627,7 +627,7 @@ fun VoiceCallControlCard(
                     imageVector = if (voiceCall.isMicMuted) Icons.Rounded.MicOff else Icons.Rounded.Mic,
                     contentDescription = null,
                     tint = if (voiceCall.isMicMuted) PleosColors.CoralDanger else PleosColors.TextPrimary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(44.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
@@ -642,7 +642,7 @@ fun VoiceCallControlCard(
                 onClick = onHangUpCall,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 64.dp),
+                    .heightIn(min = 120.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = PleosColors.CoralDanger,
@@ -652,7 +652,7 @@ fun VoiceCallControlCard(
                 Icon(
                     imageVector = Icons.Rounded.CallEnd,
                     contentDescription = null,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(44.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
