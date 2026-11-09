@@ -1,0 +1,14 @@
+services:
+  livekit:
+    image: livekit/livekit-server:v1.8
+    # 에뮬레이터·폰·브라우저가 미디어(UDP)를 보낼 주소. 비우면 도커 내부 IP가 광고돼 통화 무음
+    command: --config /etc/livekit.yaml --node-ip ${LIVEKIT_NODE_IP:-127.0.0.1}
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "50000-50020:50000-50020/udp"
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    restart: unless-stopped

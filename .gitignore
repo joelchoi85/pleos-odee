@@ -1,0 +1,37 @@
+# 의존성·빌드 산출물
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.vite/
+.gradle/
+.kotlin/
+.externalNativeBuild/
+.cxx/
+captures/
+*.apk
+*.aab
+
+# 비밀값 (예시 파일만 커밋)
+.env
+.env.*
+!.env.example
+local.properties
+*.jks
+*.keystore
+
+# IDE·OS·로그
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.log
+
+# 내부 운영 문서 (AI 에이전트 규칙·세션 인계·참고 자료) — 제출 저장소에서 제외
+.agents/
+.claude/
+CLAUDE.md
+AGENTS.md
+vault/
+local/
+audition.md

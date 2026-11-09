@@ -1,0 +1,20 @@
+{
+  "name": "hyundai-ai-odee",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pleos Connect AI Group Driving & Real-Time Voice Sync Platform",
+  "packageManager": "pnpm@12.16.1",
+  "scripts": {
+    "build": "pnpm --filter @odee/shared-types build && pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "dev:server": "pnpm --filter @odee/server dev",
+    "dev:companion": "pnpm --filter @odee/companion-web dev",
+    "dev:simulator": "pnpm --filter @odee/simulator-dashboard dev"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

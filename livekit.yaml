@@ -1,0 +1,9 @@
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50020
+  use_external_ip: false
+# 키는 docker-compose가 .env(LIVEKIT_API_KEY/SECRET)에서 LIVEKIT_KEYS로 주입
+logging:
+  level: info

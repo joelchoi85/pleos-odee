@@ -1,0 +1,9 @@
+{
+  "name": "오디 (Odee) · 모바일 컴패니언",
+  "short_name": "오디 (Odee)",
+  "start_url": "/?group=GRP-PLEOS-DEMO",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": []
+}
