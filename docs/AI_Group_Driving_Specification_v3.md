@@ -42,7 +42,7 @@
 3. **`NaviHelper SDK`**
    - 운전자가 음성 또는 원터치로 공동 경유지·대안 경로를 수락하는 즉시 Pleos 순정 내비게이션 경로에 경유지 및 재탐색 반영.
 4. **`TextToSpeech (TTS)` & `SpeechToText (STT)` SDK + `Gleo Interface`**
-   - 돌발 상황 발생 시 AI가 생성한 1문장 상황 브리핑을 즉시 음성 안내하고, 운전자의 자연어 음성 명령으로 핸즈프리 의사결정 완결. 공식 Gleo Interface(`assets/schema.json` + intent-filter + `APP_ACTION_RESPONSE` 응답)에 2개 기능 등록: `SHOW_GROUP_LOCATION`("일행 어디쯤이야?" → 지도를 가리지 않고 일행 ETA·이탈 1문장 음성 응답, 드로워에 오디를 열어 두면 지도 옆에 함께 표시), `CONTROL_VOICE_CALL`("마이크 꺼줘/통화 끊어줘"), `ANSWER_GROUP_ALERT`(알림에 "수락/경로만/유지" 음성 응답).
+   - 돌발 상황 발생 시 AI가 생성한 1문장 상황 브리핑을 즉시 음성 안내하고, 운전자의 자연어 음성 명령으로 핸즈프리 의사결정 완결. 공식 Gleo Interface(`assets/schema.json` + intent-filter + `APP_ACTION_RESPONSE` 응답)에 3개 기능 등록: `SHOW_GROUP_LOCATION`("일행 어디쯤이야?" → 지도를 가리지 않고 그룹 경로 기준 1문장 음성 응답, 예: "2호차 EV9 32km 앞, 14:45 도착." 드로워에 오디를 열어 두면 지도 옆에 함께 표시), `CONTROL_VOICE_CALL`("마이크 꺼줘/통화 끊어줘"), `ANSWER_GROUP_ALERT`(알림에 "수락/경로만/유지" 음성 응답).
 
 ### 2.2. 전체 시스템 데이터 흐름
 
@@ -51,7 +51,7 @@ flowchart LR
     subgraph PleosCar["Pleos Connect 차량 (AAOS)"]
         VSDK["Vehicle / FusedLocation / NaviHelper"]
         Gleo["TTS / STT / Gleo Interface"]
-        IVIUI["B안 전면 알림 UX (평소 순정 내비)"]
+        IVIUI["적응형 알림 UX (주행 중 배너+음성 / 정차 시 전면)"]
         Audio["AAOS AudioFocus Ducking + LiveKit"]
     end
 
@@ -90,7 +90,7 @@ flowchart LR
 1. **상황 감지:** 2호차(SOC 78%, 85km/h)가 판교 IC 분기점을 놓쳐 기준 경로 폴리라인에서 120m 이상 이탈(2회 연속 확인).
 2. **AI 맥락 추론:** 배터리/연료 충분(`78%`), 감속 없음, 주변 정차 POI 진입 패턴 아님 → **`ACCIDENTAL_MISSED_EXIT` (단순 경로 이탈)** 판정 및 재합류 추가 소요 시간(`+5분`) 산출.
 3. **안전 UX 및 보이스 연결:**
-   - 평소엔 순정 내비가 떠 있다가 이 순간에만 **오디가 앞으로 나와** 전체 화면 알림 + 세로 대열선(위=도착·아래=출발)을 표시(8초 타임아웃 게이지). 동시에 실내 **앰비언트 라이트 Amber** 점등. 결정·타임아웃 후 순정 내비 복귀 및 조명 원복.
+   - **주행 중엔 지도를 가리지 않고** 알림 배너 + 음성 브리핑만 제공하고, 정차 중일 때만 **오디가 앞으로 나와** 전체 화면 알림 + 세로 대열선(위=도착·아래=출발)을 표시(8초 타임아웃 게이지). 동시에 실내 **앰비언트 라이트 Amber** 점등. 결정·타임아웃 후 순정 내비 복귀 및 조명 원복.
    - `TTS` 자동 브리핑: *"2호차가 판교 분기점을 지나쳐 경로를 이탈했습니다. 5분 지연이 예상됩니다. 그룹 보이스를 연결할까요?"*
    - 운전자가 `"연결해줘"` 음성 응답 또는 원터치 수락 시 AAOS 오디오 볼륨이 30%로 **Ducking**되며 LiveKit 그룹 보이스 룸이 즉시 오픈(앰비언트 라이트 **Green** 전환). 타임아웃 시 안전 기본값(기존 경로 유지)으로 자동 닫힘.
 
@@ -110,6 +110,7 @@ flowchart LR
 - **`HIGH_FOCUS` (`60km/h 이상` 또는 `Brake 작동 중`):** 지도 조작 및 세부 리스트 잠금, 초대형 핵심 텍스트(20자 이내) + 음성 수락 인터페이스만 허용.
 - **`NORMAL_DRIVING` (`0 < 속도 < 60km/h`):** 전면 알림 카드 내 대형 2지선다 버튼(`[기존 경로 유지]` / `[동기화 + 보이스]`) 허용.
 - **주행 중 그룹 화면:** 일행 상태는 1줄 요약(예: "2호차 · 3분 뒤 · 정상")만 표시해 시선 체류 최소화.
+- **급제동 감지 (`30km/h 이상 제동` 또는 급감속):** 통화 중이면 수신 음성을 20%로 즉시 감쇄해 전방 상황에 집중, 해제 시 자동 복원.
 - **`STATIONARY` (`속도 0` 및 `P단`):** 전체 일행 실시간 위치 지도, 차량별 배터리/연료/ETA 대시보드, 초대 QR 모달 등 전체 기능 잠금 해제.
 
 ---
@@ -131,8 +132,8 @@ flowchart LR
 
 | 영역 | 상태 | 내용 |
 | :--- | :--- | :--- |
-| **B안 화면 흐름** | ✅ 구현 | 평소 순정 내비 → 일행 이벤트 시 포그라운드 서비스가 오디를 앞으로(HUN fullScreenIntent) → 결정·타임아웃 후 `moveTaskToBack` + `NaviHelper.requestNavigationScreen`으로 내비 복귀. Pleos는 최상위 앱 1개만 표시하므로 오버레이 대신 이 방식 채택 |
-| **Gleo Interface** | ✅ 구현 | `schema.json` 2개 기능(`SHOW_GROUP_LOCATION`, `ANSWER_GROUP_ALERT`) 등록, 설치 시 Gleo 인식 확인. STT는 알림 동안(TTS 종료 후)만 활성 |
+| **B안 화면 흐름** | ✅ 구현 | 평소 순정 내비. 주행 중 일행 이벤트는 지도를 가리지 않고 알림 배너(HUN)+음성만, 정차 중엔 포그라운드 서비스가 오디를 앞으로(fullScreenIntent) → 결정·타임아웃 후 `moveTaskToBack` + `NaviHelper.requestNavigationScreen`으로 내비 복귀. 운전자는 우측 드로워에 오디를 열어 지도 옆에 둘 수 있음 |
+| **Gleo Interface** | ✅ 구현 | `schema.json` 3개 기능(`SHOW_GROUP_LOCATION`, `ANSWER_GROUP_ALERT`, `CONTROL_VOICE_CALL`) 등록, 화면 전환 없는 서비스 응답, 설치 시 Gleo 인식 확인. 수신기는 Gleo 전용 권한으로 보호. STT는 알림 동안(TTS 종료 후)만 활성 |
 | **Vehicle SDK** | ✅ 구현 | `EvBattery` SOC, `Fuel`, `Brake`, `Gear` 리스너 → 서버 텔레메트리 및 안전 등급 산출 |
 | **NaviHelper SDK** | ✅ 구현 | 그룹 목적지·수락 경유지를 `requestRoute`로 순정 내비에 자동 설정 |
 | **TTS/STT SDK** | ✅ 구현 | 알림 1문장 브리핑, 음성 수락. 자격증명 있으면 HYBRID, 없으면 ON_DEVICE |
