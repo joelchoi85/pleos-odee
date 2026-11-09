@@ -24,6 +24,7 @@ import com.hyundai.pleos.syncdrive.domain.ServerWsEvent
 import com.hyundai.pleos.syncdrive.domain.VoiceDecision
 import com.hyundai.pleos.syncdrive.domain.checkIsHardBraking
 import com.hyundai.pleos.syncdrive.domain.generateStationaryBriefing
+import com.hyundai.pleos.syncdrive.domain.buildGroupLocationSummary
 import com.hyundai.pleos.syncdrive.domain.toCompanionUiModel
 import com.hyundai.pleos.syncdrive.domain.toUiModel
 import com.hyundai.pleos.syncdrive.domain.toIncomingCallAlert
@@ -206,10 +207,7 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
         }
         viewModelScope.launch {
             uiState.collect { st ->
-                val others = st.companions.filterNot { it.isSelfHost }
-                GleoIntentEventBus.groupSummary = if (others.isEmpty()) "아직 연결된 일행이 없습니다." else others.joinToString(" ") {
-                    "${it.displayName} 도착 ${it.etaDisplay}${if (it.isOffRoute) ", 경로 이탈 중" else ""}."
-                }
+                GleoIntentEventBus.groupSummary = buildGroupLocationSummary(st.localVehicle, st.companions, st.routePolyline)
             }
         }
         observeDrivingSafetyAndBriefing()
