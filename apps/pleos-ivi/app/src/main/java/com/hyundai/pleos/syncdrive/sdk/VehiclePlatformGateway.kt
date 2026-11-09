@@ -104,6 +104,9 @@ object GleoIntentEventBus {
     private val _callCommands = MutableSharedFlow<VoiceCallAction>(extraBufferCapacity = 8)
     val callCommands: SharedFlow<VoiceCallAction> = _callCommands.asSharedFlow()
 
+    /** 통화 연결 여부 (ViewModel이 갱신). 통화가 없을 때 Gleo에 거짓 성공 응답을 하지 않기 위함 */
+    @Volatile var isCallActive: Boolean = false
+
     fun emitCallAction(action: VoiceCallAction) {
         _callCommands.tryEmit(action)
     }
@@ -116,14 +119,15 @@ object GleoIntentEventBus {
         if (lower.contains("끊") || lower.contains("종료") || lower.contains("end") || lower.contains("hangup") || lower.contains("leave")) {
             return VoiceCallAction.END_CALL
         }
-        if (lower.contains("켜") || lower.contains("unmute") || lower.contains("해제") || lower.contains("on")) {
-            return VoiceCallAction.UNMUTE
-        }
-        if (lower.contains("꺼") || lower.contains("뮤트") || lower.contains("mute") || lower.contains("음소거") || lower.contains("off")) {
-            return VoiceCallAction.MUTE
-        }
+        // 토글을 먼저: "toggle mute"가 mute에 걸리지 않게. 영어 "on/off" 부분일치는 오탐("mute on"→켜기)이라 제외
         if (lower.contains("토글") || lower.contains("toggle")) {
             return VoiceCallAction.TOGGLE_MUTE
+        }
+        if (lower.contains("켜") || lower.contains("unmute") || lower.contains("해제")) {
+            return VoiceCallAction.UNMUTE
+        }
+        if (lower.contains("꺼") || lower.contains("뮤트") || lower.contains("mute") || lower.contains("음소거")) {
+            return VoiceCallAction.MUTE
         }
         return null
     }

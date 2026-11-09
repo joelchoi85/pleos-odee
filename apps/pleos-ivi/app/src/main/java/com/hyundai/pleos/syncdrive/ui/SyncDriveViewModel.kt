@@ -201,6 +201,9 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
         observeWebSocketEvents()
         observeGlobalGleoCommands()
         observeGleoCallCommands()
+        viewModelScope.launch {
+            voiceSessionManager.state.collect { GleoIntentEventBus.isCallActive = it.roomState == VoiceRoomState.CONNECTED_DUCKED }
+        }
         observeDrivingSafetyAndBriefing()
         // 그룹 목적지를 순정 내비에 1회 설정 (목적지가 바뀔 때만 다시)
         viewModelScope.launch {

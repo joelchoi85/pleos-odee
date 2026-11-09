@@ -18,7 +18,9 @@ class GleoVoiceActionReceiver : BroadcastReceiver() {
             GleoIntentEventBus.ACTION_CONTROL_VOICE_CALL -> {
                 val rawAction = GleoIntentEventBus.param(intent, "action")
                 val parsedAction = GleoIntentEventBus.parseCallAction(rawAction)
-                if (parsedAction != null) {
+                if (parsedAction != null && !GleoIntentEventBus.isCallActive) {
+                    GleoIntentEventBus.respond(context, GleoIntentEventBus.ACTION_CONTROL_VOICE_CALL, false, "진행 중인 오디 통화가 없습니다.")
+                } else if (parsedAction != null) {
                     GleoIntentEventBus.emitCallAction(parsedAction)
                     val msg = when (parsedAction) {
                         GleoIntentEventBus.VoiceCallAction.END_CALL -> "통화를 종료합니다."

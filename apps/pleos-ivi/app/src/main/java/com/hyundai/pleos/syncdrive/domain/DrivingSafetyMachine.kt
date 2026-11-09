@@ -97,7 +97,8 @@ fun deriveDefaultTelemetryIntervalMs(
  * 급제동(Hard Braking) 감지 판정:
  * - isBraking == true 상태이면서,
  * - P단 정차나 0~1.0 km/h 신호 대기가 아닐 때,
- * - 속도가 30 km/h 이상이거나, 직전 속도 대비 급격한 감속(>= 15 km/h)이거나, 주행 중(> 5.0 km/h) 제동 시 true.
+ * - 속도가 30 km/h 이상이거나, 직전 속도 대비 급격한 감속(>= 15 km/h)일 때 true.
+ *   (저속 일반 제동까지 잡으면 시내 주행 내내 마이크가 끊김)
  */
 fun checkIsHardBraking(
     isBraking: Boolean,
@@ -109,7 +110,7 @@ fun checkIsHardBraking(
         return false
     }
     val speedDrop = previousSpeedKmh - currentSpeedKmh
-    return currentSpeedKmh >= 30.0 || speedDrop >= 15.0 || currentSpeedKmh > 5.0
+    return currentSpeedKmh >= 30.0 || speedDrop >= 15.0
 }
 
 /**
@@ -129,8 +130,8 @@ fun calculateDistanceMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Doub
 /**
  * 정차 중(0km/h, 신호 대기) 스마트 대열 1줄 브리핑(Stationary Context Briefing) 생성.
  *
- * - 일행 전원 정상 주행 시: "🚦 신호 대기 중 · 일행 전원(N대) 정상 주행 중 · 2호차가 후방 400m에 있습니다"
- * - 이탈/경유 차량 발생 시: "🚦 신호 대기 중 · 2호차 충전소 경유 중 (배터리 18%) · 3호차 정상 주행"
+ * - 일행 전원 정상 주행 시: "🚦 신호 대기 중 · 일행 전원(N대) 정상 주행 중 · 2호차 400m 거리" (좌표 없으면 거리 생략)
+ * - 이탈/잔량 부족 차량 발생 시: "🚦 신호 대기 중 · 2호차 배터리 18% · 3호차 정상 주행"
  */
 fun generateStationaryBriefing(
     local: LocalVehicleSnapshot,
@@ -156,7 +157,8 @@ fun generateStationaryBriefing(
         val abnormalSummaries = abnormalVehicles.map { v ->
             val label = formatVehicleLabel(v)
             if (v.energyPercent <= 20) {
-                "$label 충전소 경유 중 (배터리 ${v.energyPercent}%)"
+                val kind = if (v.powertrain == PowertrainType.EV) "배터리" else "연료"
+                "$label $kind ${v.energyPercent}%"
             } else {
                 "$label 경로 이탈 (${v.crossTrackDistanceMeters}m)"
             }
@@ -173,18 +175,17 @@ fun generateStationaryBriefing(
         val firstOther = otherVehicles.first()
         val firstOtherLabel = formatVehicleLabel(firstOther)
 
+        // 좌표가 없으면 거리를 지어내지 않는다. 방향(전/후방)은 경로 기준 진행도가 없어 표기하지 않음
         val distanceText = if (local.lat != 0.0 && local.lng != 0.0 &&
             firstOther.lat != null && firstOther.lng != null &&
             (firstOther.lat != 0.0 || firstOther.lng != 0.0)
         ) {
             val d = calculateDistanceMeters(local.lat, local.lng, firstOther.lat, firstOther.lng)
-            val rounded = ((d / 10.0).roundToInt() * 10).coerceAtLeast(50)
-            "${rounded}m"
-        } else {
-            "400m"
-        }
+            "${((d / 10.0).roundToInt() * 10).coerceAtLeast(50)}m"
+        } else null
 
-        "🚦 신호 대기 중 · 일행 전원(${totalVehicleCount}대) 정상 주행 중 · ${firstOtherLabel}가 후방 ${distanceText}에 있습니다"
+        val head = "🚦 신호 대기 중 · 일행 전원(${totalVehicleCount}대) 정상 주행 중"
+        if (distanceText == null) head else "$head · $firstOtherLabel $distanceText 거리"
     }
 }
 

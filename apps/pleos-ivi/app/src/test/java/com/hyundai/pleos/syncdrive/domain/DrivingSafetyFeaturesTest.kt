@@ -74,8 +74,8 @@ class DrivingSafetyFeaturesTest {
     }
 
     @Test
-    fun `braking while moving above 5kmh triggers hard braking mute`() {
-        assertTrue(
+    fun `normal low speed braking does not trigger hard braking mute`() {
+        assertFalse(
             checkIsHardBraking(
                 isBraking = true,
                 currentSpeedKmh = 12.0,
@@ -307,7 +307,7 @@ class DrivingSafetyFeaturesTest {
         )
 
         val briefing = generateStationaryBriefing(local, companions)
-        assertEquals("🚦 신호 대기 중 · 일행 전원(3대) 정상 주행 중 · 2호차가 후방 400m에 있습니다", briefing)
+        assertEquals("🚦 신호 대기 중 · 일행 전원(3대) 정상 주행 중", briefing)
     }
 
     @Test
@@ -362,7 +362,7 @@ class DrivingSafetyFeaturesTest {
         )
 
         val briefing = generateStationaryBriefing(local, companions)
-        assertEquals("🚦 신호 대기 중 · 2호차 충전소 경유 중 (배터리 18%) · 3호차 정상 주행", briefing)
+        assertEquals("🚦 신호 대기 중 · 2호차 배터리 18% · 3호차 정상 주행", briefing)
     }
 
     @Test
@@ -468,7 +468,7 @@ class DrivingSafetyFeaturesTest {
 
         val briefing = generateStationaryBriefing(local, companions)
         assertTrue(briefing.contains("🚦 신호 대기 중 · 일행 전원(2대) 정상 주행 중"))
-        assertTrue(briefing.contains("2호차가 후방 360m에 있습니다") || briefing.contains("2호차가 후방 350m에 있습니다"))
+        assertTrue(briefing.contains("2호차 360m 거리") || briefing.contains("2호차 350m 거리"))
     }
 
     @Test

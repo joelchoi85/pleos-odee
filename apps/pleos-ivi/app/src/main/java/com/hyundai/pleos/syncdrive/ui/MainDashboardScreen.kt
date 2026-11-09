@@ -165,7 +165,9 @@ fun MainDashboardScreen(
                     onToggleMute = onToggleMute,
                     onHangUpCall = onHangUpCall,
                     modifier = Modifier.fillMaxSize().padding(12.dp),
-                    isHardBrakingAudioMuted = state.isHardBrakingAudioMuted
+                    isHardBrakingAudioMuted = state.isHardBrakingAudioMuted,
+                    // 그룹 방 = ROOM-<초대코드>, 1:1 방 = 그 뒤에 -<두 ID>
+                    isDirectCall = state.voiceCall.roomName.let { it != null && it != "ROOM-${state.inviteCode}" }
                 )
                 showDevBar -> Box(Modifier.padding(12.dp)) {
                     DeveloperQuickSimulationBar(
@@ -230,7 +232,7 @@ fun MainDashboardScreen(
             }
 
             // 급제동 시 최상단 안전 경고 배너 오버레이
-            if (state.isHardBrakingAudioMuted) {
+            if (state.isHardBrakingAudioMuted && state.voiceCall.roomState == VoiceRoomState.CONNECTED_DUCKED) {
                 Surface(
                     color = PleosColors.CoralDanger,
                     shape = RoundedCornerShape(16.dp),
@@ -246,7 +248,7 @@ fun MainDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "⚠️ [안전 우선] 급제동 감지로 일행 음성이 일시 차단되었습니다",
+                            text = "⚠️ [안전 우선] 급제동 감지 · 내 마이크 일시 차단",
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold

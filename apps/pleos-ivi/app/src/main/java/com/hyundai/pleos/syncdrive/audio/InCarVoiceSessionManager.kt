@@ -250,12 +250,13 @@ class InCarVoiceSessionManager(
             roomState = VoiceRoomState.CONNECTING,
             roomName = voiceSession.roomName,
             livekitUrl = voiceSession.livekitUrl,
-            activeToken = token
+            activeToken = token,
+            isHardBrakingMuted = _state.value.isHardBrakingMuted
         )
 
         val focusGranted = audioFocusAdapter.requestMayDuckVoiceFocus()
         if (!focusGranted) {
-            _state.value = ActiveVoiceCallState(roomState = VoiceRoomState.DISCONNECTED)
+            _state.value = ActiveVoiceCallState(isHardBrakingMuted = _state.value.isHardBrakingMuted)
             return false
         }
 
@@ -332,7 +333,8 @@ class InCarVoiceSessionManager(
             ambientGreenOverridden = false
             vehicleGateway.restoreAmbientState()
         }
-        _state.value = ActiveVoiceCallState(roomState = VoiceRoomState.DISCONNECTED)
+        // 급제동 플래그는 통화와 무관한 차량 상태라 유지 (리셋하면 제동 중 시작한 다음 통화가 마이크 켜진 채 연결됨)
+        _state.value = ActiveVoiceCallState(isHardBrakingMuted = _state.value.isHardBrakingMuted)
     }
 
     companion object {

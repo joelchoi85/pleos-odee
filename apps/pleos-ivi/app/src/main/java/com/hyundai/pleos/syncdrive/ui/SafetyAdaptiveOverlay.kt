@@ -76,7 +76,8 @@ fun SafetyAdaptiveOverlayPanel(
     onToggleMute: () -> Unit,
     onHangUpCall: () -> Unit,
     modifier: Modifier = Modifier,
-    isHardBrakingAudioMuted: Boolean = false
+    isHardBrakingAudioMuted: Boolean = false,
+    isDirectCall: Boolean = false
 ) {
     val accentColor by animateColorAsState(
         targetValue = when {
@@ -106,22 +107,6 @@ fun SafetyAdaptiveOverlayPanel(
         color = PleosColors.PanelSurface
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            if (isHardBrakingAudioMuted) {
-                Surface(
-                    color = PleosColors.CoralDanger.copy(alpha = 0.22f),
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                    border = BorderStroke(1.dp, PleosColors.CoralDanger),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "⚠️ [안전 우선] 급제동 감지로 일행 음성이 일시 차단되었습니다",
-                        color = PleosColors.CoralDanger,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-                    )
-                }
-            }
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 if (activeAlert != null) {
                     ActiveAlertOverlayContent(
@@ -136,6 +121,7 @@ fun SafetyAdaptiveOverlayPanel(
                     StandbyVoiceAndSyncDock(
                         safetyLevel = safetyLevel,
                         voiceCall = voiceCall,
+                        isDirectCall = isDirectCall,
                         onToggleMute = onToggleMute,
                         onHangUpCall = onHangUpCall
                     )
@@ -535,11 +521,11 @@ private fun NormalDrivingMatrixBody(
 @Composable
 fun VoiceCallControlCard(
     voiceCall: ActiveVoiceCallState,
+    isDirectCall: Boolean,
     onToggleMute: () -> Unit,
     onHangUpCall: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDirectCall = (voiceCall.roomName?.count { it == '-' } ?: 0) > 1
     val titleText = if (isDirectCall) "🎙️ 1:1 통화 중" else "🎙️ 그룹 통화 중"
 
     Column(
@@ -588,36 +574,13 @@ fun VoiceCallControlCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (voiceCall.isHardBrakingMuted) "⚠️ 급제동 감지로 음성이 일시 안전 차단되었습니다."
+                        text = if (voiceCall.isHardBrakingMuted) "⚠️ 급제동 감지 · 내 마이크 일시 차단 중"
                         else if (voiceCall.isMicMuted) "마이크가 꺼져 있어 일행에게 들리지 않습니다."
                         else "내 음성이 일행에게 실시간으로 전달되고 있습니다.",
                         color = if (voiceCall.isHardBrakingMuted || voiceCall.isMicMuted) PleosColors.CoralDanger else PleosColors.TextSecondary,
                         fontSize = 15.sp,
                         fontWeight = if (voiceCall.isHardBrakingMuted) FontWeight.Bold else FontWeight.Normal
                     )
-                }
-            }
-
-            if (voiceCall.isHardBrakingMuted) {
-                Surface(
-                    color = PleosColors.CoralDanger.copy(alpha = 0.22f),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.5.dp, PleosColors.CoralDanger)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "⚠️ [안전 우선] 급제동 감지로 일행 음성이 일시 차단되었습니다",
-                            color = PleosColors.CoralDanger,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
                 }
             }
 
@@ -707,12 +670,14 @@ fun VoiceCallControlCard(
 private fun StandbyVoiceAndSyncDock(
     safetyLevel: DrivingSafetyLevel,
     voiceCall: ActiveVoiceCallState,
+    isDirectCall: Boolean,
     onToggleMute: () -> Unit,
     onHangUpCall: () -> Unit
 ) {
     if (voiceCall.roomState == VoiceRoomState.CONNECTED_DUCKED) {
         VoiceCallControlCard(
             voiceCall = voiceCall,
+            isDirectCall = isDirectCall,
             onToggleMute = onToggleMute,
             onHangUpCall = onHangUpCall
         )

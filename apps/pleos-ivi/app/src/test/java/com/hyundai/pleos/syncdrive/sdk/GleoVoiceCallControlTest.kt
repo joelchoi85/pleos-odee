@@ -44,6 +44,7 @@ class GleoVoiceCallControlTest {
         assertEquals(GleoIntentEventBus.VoiceCallAction.UNMUTE, GleoIntentEventBus.parseCallAction("마이크 켜줘"))
         assertEquals(GleoIntentEventBus.VoiceCallAction.UNMUTE, GleoIntentEventBus.parseCallAction("음소거 해제"))
         assertEquals(GleoIntentEventBus.VoiceCallAction.TOGGLE_MUTE, GleoIntentEventBus.parseCallAction("마이크 토글"))
+        assertEquals(GleoIntentEventBus.VoiceCallAction.TOGGLE_MUTE, GleoIntentEventBus.parseCallAction("toggle mute"))
 
         assertNull(GleoIntentEventBus.parseCallAction(null))
         assertNull(GleoIntentEventBus.parseCallAction(""))
