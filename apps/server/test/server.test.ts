@@ -152,6 +152,15 @@ describe('@odee/server Group Driving Control & Hybrid AI', () => {
     await app.close();
   });
 
+  it('keeps the invite code when the same group is recreated (demo reset)', async () => {
+    const { app, sessionService } = await buildApp({ seedDemoSession: false });
+    const first = await sessionService.createSession({ groupId: 'GRP-RESET-TEST' });
+    const second = await sessionService.createSession({ groupId: 'GRP-RESET-TEST' });
+    expect(second.inviteCode).toBe(first.inviteCode);
+    expect(sessionService.getSession(first.inviteCode)?.groupId).toBe('GRP-RESET-TEST');
+    await app.close();
+  });
+
   it('permanently wipes group session and telemetry from memory on session end (Zero-Trace Privacy)', async () => {
     const { app, sessionService } = await buildApp({ seedDemoSession: false });
 

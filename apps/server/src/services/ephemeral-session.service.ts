@@ -95,7 +95,8 @@ export class EphemeralSessionService {
         .toString(36)
         .slice(2, 5)
         .toUpperCase()}`;
-    const inviteCode = this.generateUniqueInviteCode();
+    // 같은 그룹을 다시 만들면(데모 리셋) 초대코드 유지 → 이미 열린 컴패니언 링크·차량 화면 코드가 그대로
+    const inviteCode = this.sessions.get(groupId)?.inviteCode ?? this.generateUniqueInviteCode();
 
     const members = new Map<string, InternalMemberState>();
     if (opts.hostId) {

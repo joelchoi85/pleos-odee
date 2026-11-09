@@ -26,6 +26,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import com.hyundai.pleos.syncdrive.domain.formatEtaClock
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Column
@@ -275,7 +277,7 @@ fun MainDashboardScreen(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = !connected, onClick = onReconnectWs)) {
                 Box(Modifier.size(12.dp).background(if (connected) PleosColors.EmeraldVoice else PleosColors.AmberAlert, CircleShape))
                 Spacer(Modifier.width(8.dp))
-                Text(state.localVehicle.etaIso.substringAfter('T').take(5), color = PleosColors.TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                Text(formatEtaClock(state.localVehicle.etaIso) ?: "--:--", color = PleosColors.TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.Bold)
             }
             Text(
                 state.destinationName, color = PleosColors.TextSecondary, fontSize = 22.sp,
@@ -311,7 +313,9 @@ private fun StationaryGroupDashboardContent(
     onGroupCall: () -> Unit,
     onDirectCall: (String) -> Unit,
     stationaryBriefing: String? = null
-) {
+) = BoxWithConstraints {
+    // Pleos 화면 분할(드로워)에선 폭이 절반 이하 → 초대 카드 세로 배치, 차량 카드 1열
+    val narrow = maxWidth < 900.dp
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(24.dp),
@@ -371,7 +375,8 @@ private fun StationaryGroupDashboardContent(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Surface(
                             color = PleosColors.PleosCyan.copy(alpha = 0.16f),
@@ -388,32 +393,41 @@ private fun StationaryGroupDashboardContent(
                         }
                         Column {
                             Text(
-                                text = "동승석 네비게이터 · 타사 차량 초대 코드",
+                                text = if (narrow) "일행 초대 코드" else "동승석 네비게이터 · 타사 차량 초대 코드",
                                 color = PleosColors.TextSecondary,
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(24.dp)
-                            ) {
+                            val code = @Composable {
                                 Text(
                                     text = inviteCode,
                                     color = PleosColors.PleosCyan,
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Black
                                 )
+                            }
+                            val url = @Composable {
                                 Text(
                                     text = "http://localhost:5173/?code=$inviteCode",
                                     color = PleosColors.TextPrimary,
                                     fontSize = 17.sp,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
+                            if (narrow) {
+                                code(); url()
+                            } else Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(24.dp)
+                            ) { code(); url() }
                         }
                     }
 
-                    Surface(
+                    if (!narrow) Surface(
                         color = PleosColors.CardSurfaceElevated,
                         shape = RoundedCornerShape(10.dp)
                     ) {
@@ -430,7 +444,7 @@ private fun StationaryGroupDashboardContent(
         }
 
         // All 2~4 Group Vehicles Telemetry Cards (2x2 Grid rows)
-        val chunkedCompanions = companions.chunked(2)
+        val chunkedCompanions = companions.chunked(if (narrow) 1 else 2)
         items(chunkedCompanions) { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -444,7 +458,7 @@ private fun StationaryGroupDashboardContent(
                     )
                 }
                 if (rowItems.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
+                    if (!narrow) Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -468,10 +482,13 @@ private fun StationaryGroupDashboardContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "그룹 동기화 경로 및 경유지 ($originName → $destinationName)",
+                            text = if (narrow) "경로 및 경유지" else "그룹 동기화 경로 및 경유지 ($originName → $destinationName)",
                             color = PleosColors.TextPrimary,
                             fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "경유지 ${waypoints.size}곳",
@@ -514,7 +531,7 @@ private fun StationaryGroupDashboardContent(
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
-                            Text(
+                            if (!narrow) Text(
                                 text = String.format("%.4f, %.4f", wp.lat, wp.lng),
                                 color = PleosColors.TextMuted,
                                 fontSize = 16.sp

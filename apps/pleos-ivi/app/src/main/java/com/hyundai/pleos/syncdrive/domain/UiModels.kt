@@ -23,7 +23,8 @@ data class LocalVehicleSnapshot(
     /** 플랫폼 CarUxRestrictions: 주의분산 최적화 요구 여부 */
     val isUxRestricted: Boolean = false,
     val activeRouteId: String = "route-gangneung-express",
-    val etaIso: String = "2026-11-02T14:40:00Z"
+    // ponytail: 데모용 고정 ETA(앱 시작 +25분, 시뮬레이터 1호차와 같음). 실차는 NaviHelper 잔여 시간으로 갱신
+    val etaIso: String = java.time.Instant.now().plusSeconds(1500).toString()
 ) {
     val safetyLevel: DrivingSafetyLevel
         get() = deriveDrivingSafetyLevel(
@@ -217,13 +218,15 @@ fun GroupMemberSnapshot.toCompanionUiModel(selfVehicleId: String): CompanionVehi
     )
 }
 
-private fun formatIsoTimeForHud(etaIso: String): String {
-    val timeIndex = etaIso.indexOf('T')
-    if (timeIndex != -1 && etaIso.length >= timeIndex + 6) {
-        return etaIso.substring(timeIndex + 1, timeIndex + 6) + " 도착"
-    }
-    return "14:40 도착"
-}
+private fun formatIsoTimeForHud(etaIso: String): String =
+    formatEtaClock(etaIso)?.let { "$it 도착" } ?: "도착 시간 미정"
+
+/** ISO-8601(UTC "Z" 포함) → 차량 로컬 시각 "HH:mm". 파싱 실패 시 null */
+fun formatEtaClock(etaIso: String, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String? =
+    runCatching {
+        java.time.OffsetDateTime.parse(etaIso).atZoneSameInstant(zone)
+            .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+    }.getOrNull()
 
 /**
  * 초기 정차 대시보드 및 오프라인 에뮬레이터 시연을 위한 기본 4대 그룹 시드 데이터.
@@ -242,7 +245,7 @@ object DemoGroupSeed {
             remainingRangeKm = localSnapshot.remainingRangeKm?.roundToInt() ?: 418,
             speedKmh = localSnapshot.speedKmh.roundToInt(),
             gear = localSnapshot.gear,
-            etaDisplay = "14:40 도착",
+            etaDisplay = formatIsoTimeForHud(localSnapshot.etaIso),
             isOffRoute = false,
             crossTrackDistanceMeters = 0,
             inVoiceCall = false,
