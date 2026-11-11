@@ -60,15 +60,6 @@ export function ScenarioDirectorPanel() {
     setEventLogs((prev) => [`[${ts}] ${line}`, ...prev].slice(0, 25));
   }, []);
 
-  const speakTts = useCallback((script: string) => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(script);
-      utter.lang = 'ko-KR';
-      utter.rate = 1.05;
-      window.speechSynthesis.speak(utter);
-    }
-  }, []);
 
   const connectWs = useCallback(() => {
     if (wsRef.current) {
@@ -108,7 +99,7 @@ export function ScenarioDirectorPanel() {
           appendLog(
             `🚨 AI 알림 [${msg.alert.category ?? msg.alert.type}]: ${msg.alert.aiBriefing.headlineKo}`,
           );
-          speakTts(msg.alert.aiBriefing.ttsScriptKo);
+          // 브리핑 음성은 차량 앱이 낸다. 여기서도 읽으면 차 소리와 겹쳐 녹화에 섞임
         } else if (msg.type === 'ALERT_RESOLVED') {
           setActiveAlert(null);
           setCountdown(0);
@@ -136,7 +127,7 @@ export function ScenarioDirectorPanel() {
     ws.onclose = () => {
       setWsConnected(false);
     };
-  }, [appendLog, groupId, speakTts]);
+  }, [appendLog, groupId]);
 
   useEffect(() => {
     connectWs();
