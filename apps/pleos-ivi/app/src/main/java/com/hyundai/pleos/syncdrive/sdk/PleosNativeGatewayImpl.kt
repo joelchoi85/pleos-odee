@@ -362,8 +362,8 @@ class PleosNativeGatewayImpl(
 
     fun setNavigationDestination(lat: Double, lng: Double, name: String) {
         val helper = naviHelper ?: return
-        // 안내 중에 다시 요청하면 순정 내비가 "경로 탐색 오류 - Invalid Parameter" 팝업(세션 리셋 때 실측) → 기존 안내를 끊고 새로 요청
-        runCatching { helper.cancelRoute() }
+        // cancelRoute()를 앞에 두면 순정 내비 cancelTrip이 끝나지 않아 '안내 종료'가 먹지 않음(실측) → 쓰지 않음.
+        // 호출은 앱 프로세스당 목적지가 바뀔 때만(ViewModel distinctUntilChanged)
         odeeWaypointAdded = false
         runCatching {
             helper.requestRoute(RouteInfo(lat, lng, null, null, name, "", name, "0", RouteOption.RECOMMENDED, "", false))
