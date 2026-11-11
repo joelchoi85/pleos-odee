@@ -455,7 +455,7 @@ export class EphemeralSessionService {
         detailKo:
           proposal.noteKo ||
           `'${proposal.waypoint.name}' 경유 실시간 정체 우회 경로입니다. 수락 시 내비 반영 및 보이스가 연결됩니다.`,
-        ttsScriptKo: `${proposal.proposerName}님이 ${Math.abs(effectiveSavingsMinutes)}분 단축 가능한 ${proposal.waypoint.name} 우회 경로를 보냈습니다. 경로를 변경하고 보이스로 대화할까요?`,
+        ttsScriptKo: `${proposal.proposerName}님이 ${Math.abs(effectiveSavingsMinutes)}분 단축 가능한 ${proposal.waypoint.name} 경로를 보냈습니다. 경로를 변경하고 보이스로 대화할까요?`,
       },
       voiceSession: {
         roomName: session.activeVoiceRoomName,

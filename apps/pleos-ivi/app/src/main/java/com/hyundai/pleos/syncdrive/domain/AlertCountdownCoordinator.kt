@@ -15,7 +15,7 @@ data class AlertCountdownState(
     val isRunning: Boolean = false
 ) {
     val progressFraction: Float
-        get() = if (!isRunning || totalSeconds <= 0) {
+        get() = if (activeEventId == null || totalSeconds <= 0) {
             0f
         } else {
             (remainingSeconds.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
@@ -58,6 +58,13 @@ class AlertCountdownCoordinator(
             _state.value = AlertCountdownState()
             onTimeoutSafeDefault(VoiceDecision.KEEP_ROUTE)
         }
+    }
+
+    /** 브리핑 TTS가 끝나기 전: 응답 시간은 아직 흐르지 않지만 "0초"가 아닌 전체 시간을 보여 줌 */
+    fun hold(eventId: String, timeoutSeconds: Int = 8) {
+        countdownJob?.cancel()
+        val total = timeoutSeconds.coerceAtLeast(1)
+        _state.value = AlertCountdownState(activeEventId = eventId, totalSeconds = total, remainingSeconds = total)
     }
 
     fun cancel() {
