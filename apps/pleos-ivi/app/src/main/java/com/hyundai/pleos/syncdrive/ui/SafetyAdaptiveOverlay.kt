@@ -214,7 +214,7 @@ private fun ActiveAlertOverlayContent(
                     onClick = { onDecision(VoiceDecision.ACCEPT_AND_CALL) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 88.dp),
+                        .heightIn(min = 120.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PleosColors.EmeraldVoice,
@@ -255,7 +255,7 @@ private fun ActiveAlertOverlayContent(
                     onClick = { onDecision(VoiceDecision.ACCEPT_AND_CALL) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 68.dp),
+                        .heightIn(min = 120.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = accentColor,
@@ -279,7 +279,7 @@ private fun ActiveAlertOverlayContent(
                     onClick = { onDecision(VoiceDecision.KEEP_ROUTE) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 60.dp),
+                        .heightIn(min = 120.dp),
                     shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.5.dp, PleosColors.BorderSubtle),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -507,7 +507,7 @@ private fun NormalDrivingMatrixBody(
                 )
                 if (isVoiceListening) {
                     Text(
-                        text = "Gleo 음성 인식 중: '수락' / '경로만' / '유지'",
+                        text = "음성으로 답하세요: '수락' · '경로만' · '유지'",
                         color = PleosColors.PleosCyan,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold

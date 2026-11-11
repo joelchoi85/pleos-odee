@@ -377,7 +377,7 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
         countdownCoordinator.hold(uiModel.eventId, uiModel.timeoutSeconds)
         // 마이크·응답 카운트다운은 TTS가 끝난 뒤 시작: 브리핑(약 6~9초)이 8초 응답 시간을 먹지 않게,
         // 그리고 브리핑의 "경유·연결"을 스스로 듣고 자동 수락하는 것 방지.
-        // TTS 완료 콜백이 안 오는 경우(실측: 스트리밍 TTS가 onDone 없이 멈춤)를 위해 최대 대기 후 강제 시작.
+        // TTS 완료 콜백이 안 오는 경우(실측: 서버 TTS 실패 후 온디바이스 재시도 시 onDone 누락)를 위해 문장 길이로 추정한 시간 뒤 강제 시작.
         // Gleo 응답은 observeGlobalGleoCommands 가 따로 처리하므로 미리 열 필요 없음.
         var responseWindowOpened = false
         val openResponseWindow = {
@@ -396,7 +396,7 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
         }
         simulatorGateway.speakBriefing(uiModel.ttsScriptKo) { openResponseWindow() }
         viewModelScope.launch {
-            delay(BRIEFING_MAX_WAIT_MS)
+            delay(estimateBriefingMs(uiModel.ttsScriptKo))
             openResponseWindow()
         }
     }
@@ -601,5 +601,5 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
     }
 }
 
-/** 브리핑 TTS 완료 콜백을 기다리는 최대 시간. 가장 긴 브리핑(약 10초)보다 길게 */
-private const val BRIEFING_MAX_WAIT_MS = 15_000L
+/** 브리핑 재생 시간 추정(실측 약 13자/초). 넉넉히 잡아 마이크가 브리핑 끝부분("연결할까요?")을 듣지 않게 */
+internal fun estimateBriefingMs(text: String): Long = 1_000L + text.length * 110L

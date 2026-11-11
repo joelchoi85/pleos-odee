@@ -349,7 +349,7 @@ private fun StationaryGroupDashboardContent(
         item {
             Button(
                 onClick = onGroupCall,
-                modifier = Modifier.fillMaxWidth().height(88.dp),
+                modifier = Modifier.fillMaxWidth().height(120.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PleosColors.EmeraldVoice)
             ) {

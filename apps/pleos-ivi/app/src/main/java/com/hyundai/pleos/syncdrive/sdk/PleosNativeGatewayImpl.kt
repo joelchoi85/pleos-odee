@@ -360,8 +360,13 @@ class PleosNativeGatewayImpl(
             .onFailure { Log.w(TAG, "NaviHelper.requestNavigationScreen failed: ${it.message}") }.isSuccess
     }
 
+    private var lastDestination: Pair<Double, Double>? = null
+
     fun setNavigationDestination(lat: Double, lng: Double, name: String) {
         val helper = naviHelper ?: return
+        // 같은 목적지를 다시 요청하면 순정 내비가 "경로 탐색 오류 - Invalid Parameter" 팝업을 띄움(세션 리셋 때 실측)
+        if (lastDestination == lat to lng) return
+        lastDestination = lat to lng
         runCatching {
             helper.requestRoute(RouteInfo(lat, lng, null, null, name, "", name, "0", RouteOption.RECOMMENDED, "", false))
         }.onFailure { Log.w(TAG, "NaviHelper.requestRoute failed: ${it.message}") }
