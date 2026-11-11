@@ -379,6 +379,8 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
     private suspend fun presentIncomingAlert(event: GroupAlertEvent) {
         // 내 차의 이탈은 내 화면에 띄우지 않음 (운전자는 이미 알고, 순정 내비가 재탐색). 일행에게만 의미 있음
         if (event.sourceMemberId == simulatorGateway.telemetryFlow.value.vehicleId) return
+        // 서버는 같은 알림을 SESSION_SNAPSHOT(activeAlert)과 GROUP_ALERT로 두 번 보냄(순서도 경로마다 다름) → 이미 띄운 알림이면 TTS 중복 재생 방지
+        if (activeAlertFlow.value?.eventId == event.eventId) return
         // Restore previous alert override if a new alert supersedes an unclosed alert
         if (alertAmbientOverridden) {
             alertAmbientOverridden = false
