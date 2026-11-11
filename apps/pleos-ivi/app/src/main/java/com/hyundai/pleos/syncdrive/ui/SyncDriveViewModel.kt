@@ -395,21 +395,21 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
             alertAmbientOverridden = true
         }
 
+        // 마이크·응답 카운트다운은 TTS가 끝난 뒤 시작: 브리핑(약 6초)이 8초 응답 시간을 먹지 않게,
+        // 그리고 브리핑의 "경유·연결"을 스스로 듣고 자동 수락하는 것 방지.
+        // Gleo 응답은 observeGlobalGleoCommands 가 따로 처리하므로 미리 열 필요 없음.
         simulatorGateway.speakBriefing(uiModel.ttsScriptKo) {
             if (activeAlertFlow.value?.eventId == uiModel.eventId) {
                 simulatorGateway.startVoiceConfirmation { recognizedDecision ->
                     onAlertDecisionSelected(recognizedDecision)
                 }
+                countdownCoordinator.startCountdown(
+                    eventId = uiModel.eventId,
+                    timeoutSeconds = uiModel.timeoutSeconds
+                ) { safeDefaultDecision ->
+                    resolveAlertInternal(uiModel, safeDefaultDecision, triggeredByTimeout = true)
+                }
             }
-        }
-        // 마이크는 TTS가 끝난 뒤에만 연다: 브리핑의 "경유·연결"을 스스로 듣고 자동 수락하는 것 방지.
-        // Gleo 응답은 observeGlobalGleoCommands 가 따로 처리하므로 미리 열 필요 없음.
-
-        countdownCoordinator.startCountdown(
-            eventId = uiModel.eventId,
-            timeoutSeconds = uiModel.timeoutSeconds
-        ) { safeDefaultDecision ->
-            resolveAlertInternal(uiModel, safeDefaultDecision, triggeredByTimeout = true)
         }
     }
 

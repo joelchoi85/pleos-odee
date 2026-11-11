@@ -168,8 +168,10 @@ export function ScenarioDirectorPanel() {
     if (!activeAlert || countdown <= 0) return;
     const timer = setTimeout(() => {
       if (countdown <= 1) {
-        appendLog('⏱️ 안전 타임아웃 도달 -> 기존 경로 자동 유지 (무조작 안전 복귀)');
-        sendAlertDecision('KEEP_ROUTE');
+        // 자동 유지 결정은 차량 앱이 보낸다(브리핑 TTS가 끝난 뒤부터 응답 시간을 셈).
+        // 여기서도 보내면 1호차가 답하기 전에 알림이 닫힘 → 표시만 한다.
+        appendLog('⏱️ 응답 시간 경과 표시 (자동 유지 결정은 차량 앱이 전송)');
+        setCountdown(0);
       } else {
         setCountdown((c) => c - 1);
       }
