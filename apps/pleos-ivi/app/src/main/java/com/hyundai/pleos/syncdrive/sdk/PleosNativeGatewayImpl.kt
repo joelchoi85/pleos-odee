@@ -26,6 +26,9 @@ import android.car.drivingstate.CarUxRestrictionsManager
 import android.car.hardware.CarPropertyValue
 import android.car.hardware.property.CarPropertyManager
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -181,6 +184,18 @@ class PleosNativeGatewayImpl(
     @Volatile private var isPleosTtsReady = false
     @Volatile private var pendingTtsDone: (() -> Unit)? = null
 
+    // 오디 브리핑 = 순정 내비 안내와 같은 용도·음량 그룹. 포커스를 잡아 안내끼리 겹치지 않게(음악은 감쇄)
+    private val guidanceAttributes = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+        .build()
+    private val audioManager by lazy { appContext.getSystemService(AudioManager::class.java) }
+    private val guidanceFocus by lazy {
+        AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            .setAudioAttributes(guidanceAttributes)
+            .build()
+    }
+
     private val ttsEvents = object : EventListener {
         override fun onStart() = Unit
         override fun onReady() = Unit
@@ -267,6 +282,7 @@ class PleosNativeGatewayImpl(
                 override fun onSuccess() {
                     tts.addEventListener(ttsEvents)
                     tts.setLocale(Locale.KOREA)
+                    runCatching { tts.setAudioAttributes(guidanceAttributes) }
                     if (!hasCredentials) {
                         isPleosTtsReady = true
                         return
@@ -325,6 +341,7 @@ class PleosNativeGatewayImpl(
                 isAndroidTtsReady = result != TextToSpeech.LANG_MISSING_DATA &&
                     result != TextToSpeech.LANG_NOT_SUPPORTED
                 androidTts?.setSpeechRate(1.03f)
+                androidTts?.setAudioAttributes(guidanceAttributes)
                 androidTts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) = Unit
                     override fun onDone(utteranceId: String?) = finishTts()
@@ -398,6 +415,7 @@ class PleosNativeGatewayImpl(
 
     override fun speakBriefing(text: String, onDone: () -> Unit) {
         pendingTtsDone = onDone
+        runCatching { audioManager.requestAudioFocus(guidanceFocus) }
         val pleos = pleosTts
         if (isPleosTtsReady && pleos != null && runCatching { pleos.speak(text, true) }.isSuccess) return
 
@@ -410,6 +428,7 @@ class PleosNativeGatewayImpl(
     }
 
     private fun finishTts() {
+        runCatching { audioManager.abandonAudioFocusRequest(guidanceFocus) }
         val cb = pendingTtsDone ?: return
         pendingTtsDone = null
         mainHandler.post(cb)
