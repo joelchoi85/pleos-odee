@@ -317,6 +317,13 @@ export function ScenarioDirectorPanel() {
         etaIso: new Date(Date.now() + 1900_000).toISOString(),
       },
     };
+    // A-1(분기점 이탈) 직후에도 새 이탈로 판정되도록 먼저 경로 복귀 1틱 (서버는 경로 위로 돌아와야 isOffRoute 해제)
+    sendTelemetry({
+      ...basePayload,
+      vehicleState: { ...basePayload.vehicleState, isBraking: false },
+      timestampMs: Date.now(),
+      location: { lat: 37.4055, lng: 127.1032, heading: 330, speedKmh: 60 },
+    });
     sendTelemetry({
       ...basePayload,
       timestampMs: Date.now(),
