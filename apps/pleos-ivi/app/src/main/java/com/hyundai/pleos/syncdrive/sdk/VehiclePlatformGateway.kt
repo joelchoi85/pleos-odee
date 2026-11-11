@@ -68,13 +68,13 @@ object VoiceCommandParser {
 
 /**
  * Gleo Interface 브릿지 (assets/schema.json 의 actionCalls 와 1:1).
- * Gleo는 action=function name, extra "ACTION_PARAM"=파라미터 JSON 으로 보내고,
+ * Gleo는 action="패키지명.function name"(AmbientAi AppActionViewModel.sendActionCall 실측), extra "ACTION_PARAM"=파라미터 JSON 으로 보내고,
  * 앱은 APP_ACTION_RESPONSE 브로드캐스트로 결과를 돌려준다.
  */
 object GleoIntentEventBus {
-    const val ACTION_SHOW_GROUP_LOCATION = "SHOW_GROUP_LOCATION"
-    const val ACTION_ANSWER_GROUP_ALERT = "ANSWER_GROUP_ALERT"
-    const val ACTION_CONTROL_VOICE_CALL = "CONTROL_VOICE_CALL"
+    const val ACTION_SHOW_GROUP_LOCATION = "com.hyundai.pleos.syncdrive.SHOW_GROUP_LOCATION"
+    const val ACTION_ANSWER_GROUP_ALERT = "com.hyundai.pleos.syncdrive.ANSWER_GROUP_ALERT"
+    const val ACTION_CONTROL_VOICE_CALL = "com.hyundai.pleos.syncdrive.CONTROL_VOICE_CALL"
     private const val EXTRA_ACTION_PARAM = "ACTION_PARAM"
     private const val ACTION_RESPONSE = "ai.pleos.playground.intent.action.APP_ACTION_RESPONSE"
 
