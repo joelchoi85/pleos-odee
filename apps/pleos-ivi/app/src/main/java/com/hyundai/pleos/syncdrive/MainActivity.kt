@@ -87,6 +87,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startSession() {
+        // 동의 고지만 하고 런타임 권한을 요청하지 않아 그룹 통화가 마이크를 못 열었음(AudioRecord 실패, 실측)
+        val missing = arrayOf(android.Manifest.permission.RECORD_AUDIO, android.Manifest.permission.ACCESS_FINE_LOCATION)
+            .filter { checkSelfPermission(it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
+        if (missing.isNotEmpty()) requestPermissions(missing.toTypedArray(), 1)
         viewModel.startGroupSession()
         OdeeKeepAliveService.start(this)
     }

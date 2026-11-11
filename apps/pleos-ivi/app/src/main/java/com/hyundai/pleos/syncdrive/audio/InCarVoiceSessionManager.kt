@@ -299,6 +299,7 @@ class InCarVoiceSessionManager(
             )
             true
         } catch (t: Throwable) {
+            Log.w("InCarVoiceSession", "voice room connect failed: ${voiceSession.livekitUrl}", t)
             cleanupResources()
             false
         }
