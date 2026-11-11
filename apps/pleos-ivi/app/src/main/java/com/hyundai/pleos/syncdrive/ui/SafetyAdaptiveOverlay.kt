@@ -584,27 +584,6 @@ fun VoiceCallControlCard(
                 }
             }
 
-            // 음성 안내 힌트 칩
-            Surface(
-                color = PleosColors.PleosCyan.copy(alpha = 0.12f),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, PleosColors.PleosCyan.copy(alpha = 0.35f))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "💡 '오디, 마이크 꺼줘' 또는 '통화 끊어줘'",
-                        color = PleosColors.PleosCyan,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
         }
 
         // 버튼 크기 대폭 확대 (높이 최소 64dp)

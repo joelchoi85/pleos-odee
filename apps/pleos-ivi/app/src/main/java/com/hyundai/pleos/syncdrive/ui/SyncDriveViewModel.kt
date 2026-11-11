@@ -201,10 +201,6 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { nativeGateway.vehicleUpdates.collect(simulatorGateway::updateSnapshot) }
         observeWebSocketEvents()
         observeGlobalGleoCommands()
-        observeGleoCallCommands()
-        viewModelScope.launch {
-            voiceSessionManager.state.collect { GleoIntentEventBus.isCallActive = it.roomState == VoiceRoomState.CONNECTED_DUCKED }
-        }
         viewModelScope.launch {
             uiState.collect { st ->
                 GleoIntentEventBus.groupSummary = buildGroupLocationSummary(st.localVehicle, st.companions, st.routePolyline)
@@ -350,27 +346,6 @@ class SyncDriveViewModel(application: Application) : AndroidViewModel(applicatio
             GleoIntentEventBus.decisions.collect { decision ->
                 if (activeAlertFlow.value != null) {
                     onAlertDecisionSelected(decision)
-                }
-            }
-        }
-    }
-
-    private fun observeGleoCallCommands() {
-        viewModelScope.launch {
-            GleoIntentEventBus.callCommands.collect { action ->
-                when (action) {
-                    GleoIntentEventBus.VoiceCallAction.END_CALL -> leaveVoiceCall()
-                    GleoIntentEventBus.VoiceCallAction.TOGGLE_MUTE -> toggleVoiceMute()
-                    GleoIntentEventBus.VoiceCallAction.MUTE -> {
-                        if (!voiceSessionManager.state.value.isMicMuted) {
-                            toggleVoiceMute()
-                        }
-                    }
-                    GleoIntentEventBus.VoiceCallAction.UNMUTE -> {
-                        if (voiceSessionManager.state.value.isMicMuted) {
-                            toggleVoiceMute()
-                        }
-                    }
                 }
             }
         }

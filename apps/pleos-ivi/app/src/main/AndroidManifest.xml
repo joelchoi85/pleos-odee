@@ -74,7 +74,6 @@
             <intent-filter>
                 <action android:name="com.hyundai.pleos.syncdrive.SHOW_GROUP_LOCATION" />
                 <action android:name="com.hyundai.pleos.syncdrive.ANSWER_GROUP_ALERT" />
-                <action android:name="com.hyundai.pleos.syncdrive.CONTROL_VOICE_CALL" />
             </intent-filter>
         </receiver>
 

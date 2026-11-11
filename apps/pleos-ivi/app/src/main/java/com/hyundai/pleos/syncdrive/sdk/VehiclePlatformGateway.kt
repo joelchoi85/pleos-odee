@@ -74,11 +74,8 @@ object VoiceCommandParser {
 object GleoIntentEventBus {
     const val ACTION_SHOW_GROUP_LOCATION = "com.hyundai.pleos.syncdrive.SHOW_GROUP_LOCATION"
     const val ACTION_ANSWER_GROUP_ALERT = "com.hyundai.pleos.syncdrive.ANSWER_GROUP_ALERT"
-    const val ACTION_CONTROL_VOICE_CALL = "com.hyundai.pleos.syncdrive.CONTROL_VOICE_CALL"
     private const val EXTRA_ACTION_PARAM = "ACTION_PARAM"
     private const val ACTION_RESPONSE = "ai.pleos.playground.intent.action.APP_ACTION_RESPONSE"
-
-    enum class VoiceCallAction { END_CALL, TOGGLE_MUTE, MUTE, UNMUTE }
 
     /** 문서상 파라미터가 개별 extra 또는 ACTION_PARAM JSON 둘 다 가능 → 둘 다 확인 */
     fun param(intent: Intent, key: String): String? =
@@ -101,39 +98,8 @@ object GleoIntentEventBus {
     private val _decisions = MutableSharedFlow<VoiceDecision>(extraBufferCapacity = 8)
     val decisions: SharedFlow<VoiceDecision> = _decisions.asSharedFlow()
 
-    private val _callCommands = MutableSharedFlow<VoiceCallAction>(extraBufferCapacity = 8)
-    val callCommands: SharedFlow<VoiceCallAction> = _callCommands.asSharedFlow()
-
-    /** 통화 연결 여부 (ViewModel이 갱신). 통화가 없을 때 Gleo에 거짓 성공 응답을 하지 않기 위함 */
-    @Volatile var isCallActive: Boolean = false
-
     /** "일행 어디쯤?" 음성 응답 문장 (ViewModel이 갱신) */
     @Volatile var groupSummary: String = "아직 연결된 일행이 없습니다."
-
-    fun emitCallAction(action: VoiceCallAction) {
-        _callCommands.tryEmit(action)
-    }
-
-    fun parseCallAction(raw: String?): VoiceCallAction? {
-        val normalized = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-        VoiceCallAction.entries.firstOrNull { it.name.equals(normalized, ignoreCase = true) }?.let { return it }
-
-        val lower = normalized.lowercase()
-        if (lower.contains("끊") || lower.contains("종료") || lower.contains("end") || lower.contains("hangup") || lower.contains("leave")) {
-            return VoiceCallAction.END_CALL
-        }
-        // 토글을 먼저: "toggle mute"가 mute에 걸리지 않게. 영어 "on/off" 부분일치는 오탐("mute on"→켜기)이라 제외
-        if (lower.contains("토글") || lower.contains("toggle")) {
-            return VoiceCallAction.TOGGLE_MUTE
-        }
-        if (lower.contains("켜") || lower.contains("unmute") || lower.contains("해제")) {
-            return VoiceCallAction.UNMUTE
-        }
-        if (lower.contains("꺼") || lower.contains("뮤트") || lower.contains("mute") || lower.contains("음소거")) {
-            return VoiceCallAction.MUTE
-        }
-        return null
-    }
 
     fun tryEmitFromRawCommand(rawText: String?): Boolean {
         val parsed = VoiceCommandParser.parse(rawText) ?: return false

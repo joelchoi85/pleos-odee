@@ -42,7 +42,7 @@
 3. **`NaviHelper SDK`**
    - 운전자가 음성 또는 원터치로 공동 경유지·대안 경로를 수락하는 즉시 Pleos 순정 내비게이션 경로에 경유지 및 재탐색 반영.
 4. **`TextToSpeech (TTS)` & `SpeechToText (STT)` SDK + `Gleo Interface`**
-   - 돌발 상황 발생 시 AI가 생성한 1문장 상황 브리핑을 즉시 음성 안내하고, 운전자의 자연어 음성 명령으로 핸즈프리 의사결정 완결. 공식 Gleo Interface(`assets/schema.json` + intent-filter + `APP_ACTION_RESPONSE` 응답)에 3개 기능 등록: `SHOW_GROUP_LOCATION`("일행 어디쯤이야?" → 지도를 가리지 않고 그룹 경로 기준 1문장 음성 응답, 예: "2호차 EV9 32km 앞, 14:45 도착." 드로워에 오디를 열어 두면 지도 옆에 함께 표시), `CONTROL_VOICE_CALL`("마이크 꺼줘/통화 끊어줘"), `ANSWER_GROUP_ALERT`(알림에 "수락/경로만/유지" 음성 응답).
+   - 돌발 상황 발생 시 AI가 생성한 1문장 상황 브리핑을 즉시 음성 안내하고, 운전자의 자연어 음성 명령으로 핸즈프리 의사결정 완결. 공식 Gleo Interface(`assets/schema.json` + intent-filter + `APP_ACTION_RESPONSE` 응답)에 2개 기능 등록: `SHOW_GROUP_LOCATION`("일행 어디쯤이야?" → 지도를 가리지 않고 그룹 경로 기준 1문장 음성 응답, 예: "2호차 EV9 32km 앞, 14:45 도착." 드로워에 오디를 열어 두면 지도 옆에 함께 표시), `ANSWER_GROUP_ALERT`(알림에 "수락/경로만/유지" 음성 응답). 통화 중에는 마이크를 통화가 쓰므로 Gleo가 호출되지 않아, 마이크 끄기·통화 종료는 큰 버튼으로 조작.
 
 ### 2.2. 전체 시스템 데이터 흐름
 
@@ -133,7 +133,7 @@ flowchart LR
 | 영역 | 상태 | 내용 |
 | :--- | :--- | :--- |
 | **B안 화면 흐름** | ✅ 구현 | 평소 순정 내비. 주행 중 일행 이벤트는 지도를 가리지 않고 알림 배너(HUN)+음성만, 정차 중엔 포그라운드 서비스가 오디를 앞으로(fullScreenIntent) → 결정·타임아웃 후 `moveTaskToBack` + `NaviHelper.requestNavigationScreen`으로 내비 복귀. 운전자는 우측 드로워에 오디를 열어 지도 옆에 둘 수 있음 |
-| **Gleo Interface** | ✅ 구현 | `schema.json` 3개 기능(`SHOW_GROUP_LOCATION`, `ANSWER_GROUP_ALERT`, `CONTROL_VOICE_CALL`) 등록, 화면 전환 없는 서비스 응답, 설치 시 Gleo 인식 확인. 수신기는 Gleo 전용 권한으로 보호. STT는 알림 동안(TTS 종료 후)만 활성 |
+| **Gleo Interface** | ✅ 구현 | `schema.json` 2개 기능(`SHOW_GROUP_LOCATION`, `ANSWER_GROUP_ALERT`) 등록, 화면 전환 없는 서비스 응답, 에뮬레이터 실발화로 호출·응답 확인. 수신기는 Gleo 전용 권한으로 보호. STT는 알림 동안(TTS 종료 후)만 활성 |
 | **Vehicle SDK** | ✅ 구현 | `EvBattery` SOC, `Fuel`, `Brake`, `Gear` 리스너 → 서버 텔레메트리 및 안전 등급 산출 |
 | **NaviHelper SDK** | ✅ 구현 | 그룹 목적지·수락 경유지를 `requestRoute`로 순정 내비에 자동 설정 |
 | **TTS/STT SDK** | ✅ 구현 | 알림 1문장 브리핑, 음성 수락. 자격증명 있으면 HYBRID, 없으면 ON_DEVICE |

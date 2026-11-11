@@ -9,7 +9,11 @@
       "function": {
         "name": "SHOW_GROUP_LOCATION",
         "description": "Shows where the other vehicles in the driving group are and their arrival times.",
-        "parameters": { "type": "object", "properties": {}, "required": [] },
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        },
         "component": "service"
       }
     },
@@ -24,29 +28,16 @@
             "decision": {
               "type": "string",
               "description": "ACCEPT_AND_CALL adds the stop and connects a voice call, ACCEPT_ROUTE_ONLY adds the stop only, KEEP_ROUTE keeps the current route.",
-              "enum": ["ACCEPT_AND_CALL", "ACCEPT_ROUTE_ONLY", "KEEP_ROUTE"]
+              "enum": [
+                "ACCEPT_AND_CALL",
+                "ACCEPT_ROUTE_ONLY",
+                "KEEP_ROUTE"
+              ]
             }
           },
-          "required": ["decision"]
-        },
-        "component": "service"
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "CONTROL_VOICE_CALL",
-        "description": "Controls the ongoing group voice call such as ending the call or muting/unmuting the microphone.",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "action": {
-              "type": "string",
-              "description": "END_CALL ends the call, TOGGLE_MUTE toggles the microphone mute, MUTE mutes the microphone, UNMUTE unmutes the microphone.",
-              "enum": ["END_CALL", "TOGGLE_MUTE", "MUTE", "UNMUTE"]
-            }
-          },
-          "required": ["action"]
+          "required": [
+            "decision"
+          ]
         },
         "component": "service"
       }
