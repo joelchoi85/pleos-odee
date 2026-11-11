@@ -1,46 +1,74 @@
-# 오디 (Odee) — 차량 데이터 기반 AI 그룹 주행 관제 및 심리스 보이스 링크 플랫폼
+# 오디 (Odee)
 
-> **오디 (Odee)**는 "어디?"의 귀여운 표현으로, 그룹 주행 중 일행의 위치와 주행 맥락을 쉽고 안전하게 공유한다는 의미를 담은 현대자동차·기아 **Pleos Playground 차량용 앱 개발 공모전** 출품 및 라이브 시연을 위한 통합 레포지토리입니다.
+**여러 대가 함께 달릴 때, 일행이 어디서 왜 멀어졌는지 차가 먼저 알려 주고 말 한마디로 경유·통화까지 이어 주는 Pleos Connect 그룹 주행 앱.**
 
-## 주요 문서
-- [AI_Group_Driving_Specification_v3.md](./docs/AI_Group_Driving_Specification_v3.md): Pleos Connect SDK 매핑, 4대 SDV 확장 기능, 멀티 맵 아키텍처를 반영한 제출용 마스터 기획서 (v3.0)
-- [future_roadmap_multimap.md](./docs/future_roadmap_multimap.md): 서드파티 내비게이션(TMAP·네이버지도·카카오내비) B2B 양방향 통합 확장 로드맵
-- [AI_Group_Driving_Specification.md](./AI_Group_Driving_Specification.md): 초기 기획 초안 (v2.0)
+"어디?"를 친근하게 부른 이름입니다. 현대자동차·기아 Pleos Playground 차량용 앱 개발 공모전 출품작.
 
-## 프로젝트 구성
-- `packages/shared-types`: 서버 · 컴패니언 웹 · 시연 대시보드 공통 TypeScript/Zod 통신 프로토콜
-- `apps/server`: Node.js + TypeScript(`Fastify` + `ws` + `livekit-server-sdk`) 실시간 관제 백엔드, 멀티 맵 라우팅 어댑터(`MapRoutingProvider`), 2단계 하이브리드 AI 맥락 판단 엔진, 휘발성 인메모리 세션 스토어
-- `apps/pleos-ivi`: Android Automotive OS(`Kotlin` + `Jetpack Compose`) Pleos Connect 차량용 네이티브 앱 (`VehiclePlatformGateway`, `AudioFocus` Ducking, `Vehicle Light` 앰비언트 라이트 알림, 1/3 스플릿 적응형 안전 UX)
-- `apps/companion-web`: 무설치 모바일 컴패니언 PWA (초대 링크 합류, 시나리오 B 대기자 우회 경로 추천, 비-Pleos 타차량 동행, 카카오내비/TMAP/네이버지도 범용 딥링크 런처)
-- `apps/simulator-dashboard`: 공모전 본선 라이브 시연용 멀티차량 주행·이탈·배터리 시나리오 컨트롤 타워 및 와이드 IVI 미러
+- 기획서: [docs/AI_Group_Driving_Specification_v3.md](./docs/AI_Group_Driving_Specification_v3.md)
+- 확장 로드맵: [docs/future_roadmap_multimap.md](./docs/future_roadmap_multimap.md)
 
-## 빠른 시작 (Quick Start)
+## APK
+- **GitHub Release:** https://github.com/joelchoi85/pleos-odee/releases/latest (`odee-v1.0.0-debug.apk`)
+- 직접 빌드 시: `apps/pleos-ivi/app/build/outputs/apk/debug/app-debug.apk` (아래 빌드 명령 참고, 저장소에는 APK를 커밋하지 않음)
 
-### 1. 의존성 설치 및 검증
+## 개발·테스트 환경
+| 항목 | 값 |
+| :--- | :--- |
+| 에뮬레이터 | **Pleos Connect Emulator v2.1.0** (AVD `Pleos_Connect_v2.1.0`, `pleos_car_emulator` 시스템 이미지, Android 14 / API 34, arm64-v8a, RAM 4GB) |
+| 화면 규격 | **2560 × 1440 px, 가로(landscape), 160 dpi** — 오디는 전체 화면과 Pleos 화면 분할(우측 드로워, 폭 900dp 미만 레이아웃) 모두 지원 |
+| 앱 | `com.hyundai.pleos.syncdrive`, minSdk 29 / targetSdk 34, Kotlin + Jetpack Compose |
+| Pleos SDK | `ai.pleos.playground:Vehicle:2.3.2`, `NaviHelper:3.0.5`, `FusedLocation:1.1.3`, `TextToSpeech:3.3.1`, `SpeechToText:3.3.1` (공개 Maven `nexus-playground.pleos.ai`) |
+| 빌드 | JDK 21 (Gradle 8.11은 JDK 22 이상 불가), Android SDK 34 |
+| 서버·웹 | Node.js 26, pnpm 12 (`packageManager` 고정), Docker Compose(LiveKit) |
+| 개발 호스트 | macOS (Apple Silicon) |
+
+## 실행 방법
+
+### 1. 서버·웹 (호스트 PC)
 ```bash
 pnpm install
-pnpm build
-pnpm test
+pnpm build && pnpm test        # 공통 프로토콜 → 서버 → 웹 빌드·테스트
+
+cp .env.example .env           # 아래 '필요한 설정' 참고
+docker compose up -d           # LiveKit (그룹 통화)
+
+pnpm dev:server                # 관제 서버      http://localhost:4000
+pnpm dev:simulator             # 시연 컨트롤 타워 http://localhost:5174
+pnpm dev:companion             # 모바일 컴패니언 http://localhost:5173/?group=GRP-PLEOS-DEMO
 ```
 
-### 2. 실시간 관제 서버 · 시연 대시보드 · 모바일 컴패니언 실행
-```bash
-# (선택) 로컬 LiveKit WebRTC SFU 구동
-docker compose up -d
-
-# 터미널 1: 실시간 관제 & AI 서버 (http://localhost:4000)
-pnpm dev:server
-
-# 터미널 2: 멀티차량 시연 컨트롤 타워 (http://localhost:5174)
-pnpm dev:simulator
-
-# 터미널 3: 모바일 컴패니언 PWA (http://localhost:5173/?group=GRP-PLEOS-DEMO)
-pnpm dev:companion
-```
-
-### 3. Pleos Connect AAOS 차량용 앱 빌드 및 유닛 테스트
+### 2. 차량 앱 (Pleos Connect 에뮬레이터)
 ```bash
 cd apps/pleos-ivi
-./gradlew testDebugUnitTest assembleDebug
+JAVA_HOME=<JDK 21 경로> ./gradlew testDebugUnitTest assembleDebug
+adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk   # 또는 Release APK
 ```
-Android Studio(Pleos Connect Emulator)에서 `apps/pleos-ivi` 프로젝트를 열어 에뮬레이터에 실행하면 호스트 머신의 관제 서버(`ws://10.0.2.2:4000/ws`)와 즉시 동기화됩니다.
+에뮬레이터에서 오디를 실행하고 위치·음성 사용에 동의하면, 호스트의 관제 서버(`ws://10.0.2.2:4000/ws`)에 1호차(호스트)로 접속합니다.
+
+### 3. 시연 흐름
+1. 컨트롤 타워(`:5174`)에서 프리셋 **0** → 1~3호차 그룹 주행 시작 (차량 화면에 일행 카드·대열선 표시)
+2. 컴패니언(`:5173`)을 폰 크기 브라우저로 열어 목적지 대기자로 합류
+3. 프리셋 **1** 분기점 이탈 · **2** 저배터리 충전소 진입 · **3** 선제 경유 제안 · **4** 대기자 우회 경로 추천 · **5** 도착·세션 파기
+4. 컨트롤 타워의 주행 안전 등급 버튼(정차 / 도심 42km/h / 고속 92km/h)으로 주행 중 알림(지도 유지·배너+음성)과 정차 중 알림(전체 화면)의 차이를 확인
+5. Gleo: "오디 일행 어디쯤이야?", "오디 마이크 꺼줘", "오디 통화 끊어줘"
+
+## 필요한 설정
+**모두 선택 사항입니다. 키가 없어도 시연 전 기능이 대체 경로로 동작합니다.**
+
+| 설정 | 위치 | 없을 때 |
+| :--- | :--- | :--- |
+| `KAKAO_REST_API_KEY` | `.env` | 경로·주변 충전소 검색이 내장 mock 데이터로 동작 |
+| `GEMINI_API_KEY` | `.env` | 브리핑 문장을 룰 기반으로 생성 (`AI_PROVIDER=RULE_ONLY`와 같음) |
+| `LIVEKIT_NODE_IP` | `.env` | 에뮬레이터·폰이 LiveKit 미디어에 닿지 않아 통화 음성이 안 들릴 수 있음. Mac은 `ipconfig getifaddr en0` 값 입력 |
+| `pleos.clientId` / `pleos.clientSecret` | `apps/pleos-ivi/local.properties` | Pleos TTS/STT가 ON_DEVICE 모드로 동작 (등록 시 HYBRID) |
+
+- `.env`, `local.properties`는 커밋하지 않습니다. `.env.example`의 LiveKit 키는 로컬 Docker 전용 개발 키입니다.
+- 에뮬레이터 음성 입력(Gleo·음성 응답): 에뮬레이터 확장 설정 → Microphone → **Virtual microphone uses host audio input** 켜기.
+- 실제 폰으로 컴패니언을 열 때는 `localhost` 대신 호스트 PC의 LAN IP로 접속합니다(같은 Wi-Fi).
+
+## 프로젝트 구성
+- `packages/shared-types` — 차량·서버·웹 공통 통신 프로토콜 (TypeScript + Zod)
+- `apps/server` — 관제 서버 (Fastify + WebSocket + LiveKit 토큰), 지도 어댑터 `MapRoutingProvider`, 이탈 맥락 판단, 인메모리 휘발성 세션
+- `apps/pleos-ivi` — Pleos Connect 차량 앱 (AAOS, Kotlin + Jetpack Compose)
+- `apps/companion-web` — 무설치 모바일 컴패니언 PWA (React)
+- `apps/simulator-dashboard` — 시연용 멀티 차량 시나리오 컨트롤 타워 (React)
