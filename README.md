@@ -8,8 +8,10 @@
 - 확장 로드맵: [docs/future_roadmap_multimap.md](./docs/future_roadmap_multimap.md)
 
 ## APK
-- **GitHub Release:** https://github.com/joelchoi85/pleos-odee/releases/latest (`odee-v1.0.0-debug.apk`)
-- 직접 빌드 시: `apps/pleos-ivi/app/build/outputs/apk/debug/app-debug.apk` (아래 빌드 명령 참고, 저장소에는 APK를 커밋하지 않음)
+- **`apk/최중열_Odee_release.apk`** (release, v1.0.0, arm64-v8a·x86_64, 약 95MB)
+- 직접 빌드: `cd apps/pleos-ivi && ./gradlew assembleRelease` → `app/build/outputs/apk/release/app-release.apk`
+- 제출 APK에는 Pleos 앱 자격증명이 들어 있지 않아 TTS/STT가 **ON_DEVICE** 모드로 동작합니다(오프라인, 기능 동일). 자격증명은 `local.properties`에 넣고 직접 빌드하면 HYBRID 모드
+- 차량 앱은 호스트 PC의 관제 서버(`10.0.2.2:4000`)·LiveKit(`10.0.2.2:7880`)에 접속하므로, 아래 실행 방법대로 서버를 먼저 띄워야 합니다
 
 ## 개발·테스트 환경
 | 항목 | 값 |

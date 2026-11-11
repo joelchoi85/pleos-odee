@@ -23,6 +23,8 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
+        // Pleos 에뮬레이터(Apple Silicon arm64 / Intel·Windows x86_64)와 실차(arm64)만. 32비트 제외로 APK를 GitHub 100MB 한도 아래로
+        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
 
         buildConfigField("String", "DEFAULT_SYNC_WS_URL", "\"ws://10.0.2.2:4000/ws\"")
         buildConfigField("String", "DEFAULT_GROUP_ID", "\"GRP-PLEOS-DEMO\"")
@@ -33,6 +35,8 @@ android {
 
     buildTypes {
         release {
+            // ponytail: 공모전 제출용 release를 디버그 키로 서명(설치 가능). 스토어 배포 시 전용 keystore로 교체
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 시연용 로컬 관제 서버·LiveKit(에뮬레이터 → 호스트 10.0.2.2)만 평문 허용. 그 외는 HTTPS/WSS -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>
