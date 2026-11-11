@@ -364,13 +364,18 @@ class PleosNativeGatewayImpl(
         val helper = naviHelper ?: return
         // 안내 중에 다시 요청하면 순정 내비가 "경로 탐색 오류 - Invalid Parameter" 팝업(세션 리셋 때 실측) → 기존 안내를 끊고 새로 요청
         runCatching { helper.cancelRoute() }
+        odeeWaypointAdded = false
         runCatching {
             helper.requestRoute(RouteInfo(lat, lng, null, null, name, "", name, "0", RouteOption.RECOMMENDED, "", false))
         }.onFailure { Log.w(TAG, "NaviHelper.requestRoute failed: ${it.message}") }
     }
 
+    /** 오디가 넣은 경유지가 내비에 남아 있는지. 새 그룹 경유지는 이전 것을 대체(쌓이면 "경유지는 최대 2개" 경고, 실측) */
+    private var odeeWaypointAdded = false
+
     override suspend fun updateNavigationWaypoint(lat: Double, lng: Double, title: String): Boolean {
         val helper = naviHelper ?: return false
+        if (odeeWaypointAdded) runCatching { helper.removeWaypoint(WaypointIndex.FIRST) }
         return runCatching {
             helper.addWaypoint(
                 RequestWaypointInfo(
@@ -384,6 +389,7 @@ class PleosNativeGatewayImpl(
                 )
             )
         }.onFailure { Log.w(TAG, "NaviHelper.addWaypoint failed: ${it.message}") }.isSuccess
+            .also { if (it) odeeWaypointAdded = true }
     }
 
     override suspend fun setAmbientAlertState(alertColor: AmbientAlertColor) {
@@ -419,7 +425,10 @@ class PleosNativeGatewayImpl(
         pendingTtsDone = onDone
         runCatching { audioManager.requestAudioFocus(guidanceFocus) }
         val pleos = pleosTts
-        if (isPleosTtsReady && pleos != null && runCatching { pleos.speak(text, true) }.isSuccess) return
+        if (isPleosTtsReady && pleos != null && runCatching { pleos.speak(text, true) }.isSuccess) {
+            watchGuidancePlayback(onDone)
+            return
+        }
 
         val engine = androidTts
         if (!isAndroidTtsReady || engine == null ||
@@ -427,6 +436,31 @@ class PleosNativeGatewayImpl(
         ) {
             finishTts()
         }
+    }
+
+    /**
+     * Pleos TTS가 온디바이스 재시도 경로에서 onDone을 안 보내는 경우가 있음(실측).
+     * 실제 재생(길 안내 용도 오디오)이 시작됐다가 멈추는 것을 보고 끝을 판정. 재생이 안 잡히면 20초 뒤 종료로 간주.
+     */
+    private fun watchGuidancePlayback(owner: () -> Unit) {
+        val startedAt = System.currentTimeMillis()
+        var seenPlaying = false
+        var quietSince = 0L
+        val tick = object : Runnable {
+            override fun run() {
+                if (pendingTtsDone !== owner) return // 이미 onDone 수신 또는 새 브리핑
+                val playing = runCatching {
+                    audioManager.activePlaybackConfigurations.any {
+                        it.audioAttributes.usage == AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE
+                    }
+                }.getOrDefault(false)
+                val now = System.currentTimeMillis()
+                if (playing) { seenPlaying = true; quietSince = 0L } else if (quietSince == 0L) quietSince = now
+                val quietLongEnough = seenPlaying && quietSince != 0L && now - quietSince > 600
+                if (quietLongEnough || now - startedAt > 20_000) finishTts() else mainHandler.postDelayed(this, 200)
+            }
+        }
+        mainHandler.postDelayed(tick, 500)
     }
 
     private fun finishTts() {
